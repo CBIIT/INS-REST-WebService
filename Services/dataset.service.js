@@ -10,7 +10,7 @@ const utils = require("../Utils");
 const search = async (searchText, filters, options) => {
   let result = {};
   let searchableText = utils.getSearchableText(searchText);
-  if (searchableText !== "") {
+  if (false && searchableText !== "") {
     let aggregationKey = cacheKeyGenerator.getAggregationKey(searchableText);
     let aggregation = cache.getValue(aggregationKey);
     if(!aggregation){

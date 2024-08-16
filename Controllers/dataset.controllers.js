@@ -17,22 +17,22 @@ const search = async (req, res) => {
     if (pageInfo.pageSize !== parseInt(pageInfo.pageSize, 10) || pageInfo.pageSize <= 0) {
       pageInfo.pageSize = 10;
     }
-    if(sort.k === "primary_dataset_scope") {
-      sort.name = "Primary Dataset Scope";
-      sort.k = "primary_dataset_scope";
-    } else if (sort.k === "dataset_name.raw") {
-      sort.name = "Dataset";
-      sort.k = "dataset_name.raw";
-    } else if (sort.k === "case_id") {
-      sort.name = "Cases";
-      sort.k = "case_id";
-    } else if (sort.k === "sample_id") {
-      sort.name = "Samples";
-      sort.k = "sample_id";
-    } else {
-      sort.name = "Resource";
-      sort.k = "data_resource_id";
-    }
+    // if(sort.k === "primary_dataset_scope") {
+    //   sort.name = "Primary Dataset Scope";
+    //   sort.k = "primary_dataset_scope";
+    // } else if (sort.k === "dataset_name.raw") {
+    //   sort.name = "Dataset";
+    //   sort.k = "dataset_name.raw";
+    // } else if (sort.k === "case_id") {
+    //   sort.name = "Cases";
+    //   sort.k = "case_id";
+    // } else if (sort.k === "sample_id") {
+    //   sort.name = "Samples";
+    //   sort.k = "sample_id";
+    // } else {
+    //   sort.name = "Resource";
+    //   sort.k = "data_resource_id";
+    // }
     if(!sort.v || ["asc", "desc"].indexOf(sort.v) === -1) {
       sort.v = "asc";
     }
@@ -77,22 +77,22 @@ const export2CSV = async (req, res) => {
   let filters = body.resources_filter ? body.resources_filter : [];
   let pageInfo = {page: 1, pageSize: 5000};
   let sort = body.sort ? body.sort : {k: "data_resource_id", v: "asc"};
-  if(sort.k === "primary_dataset_scope") {
-    sort.name = "Primary Dataset Scope";
-    sort.k = "primary_dataset_scope";
-  } else if (sort.k === "dataset_name.raw") {
-    sort.name = "Dataset";
-    sort.k = "dataset_name.raw";
-  } else if (sort.k === "case_id") {
-    sort.name = "Cases";
-    sort.k = "case_id";
-  } else if (sort.k === "sample_id") {
-    sort.name = "Samples";
-    sort.k = "sample_id";
-  } else {
-    sort.name = "Resource";
-    sort.k = "data_resource_id";
-  }
+  // if(sort.k === "primary_dataset_scope") {
+  //   sort.name = "Primary Dataset Scope";
+  //   sort.k = "primary_dataset_scope";
+  // } else if (sort.k === "dataset_name.raw") {
+  //   sort.name = "Dataset";
+  //   sort.k = "dataset_name.raw";
+  // } else if (sort.k === "case_id") {
+  //   sort.name = "Cases";
+  //   sort.k = "case_id";
+  // } else if (sort.k === "sample_id") {
+  //   sort.name = "Samples";
+  //   sort.k = "sample_id";
+  // } else {
+  //   sort.name = "Resource";
+  //   sort.k = "data_resource_id";
+  // }
   if(!sort.v || ["asc", "desc"].indexOf(sort.v) === -1) {
     sort.v = "asc";
   }
