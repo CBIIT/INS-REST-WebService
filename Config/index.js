@@ -21,7 +21,7 @@ if (!cfg.error) {
         ES_HOST: tmp.ES_HOST,
     };
 }
-var es_protocal = process.env.ES_PROTOCOL || "https"
+
 // All configurations will extend these options
 // ============================================
 var config = {
@@ -110,7 +110,7 @@ var config = {
   },
 
     elasticsearch: {
-    host: es_protocol + "://" + (process.env.ES_HOST || "127.0.0.1:9200"),
+    host: process.env.ES_PROTOCOL || "https" + "://" + (process.env.ES_HOST || "127.0.0.1:9200"),
     requestTimeout: 30000
   },
 
