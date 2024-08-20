@@ -13,6 +13,6 @@ RUN npm ci --only=production
 
 COPY --chown=node:node . .
 
-EXPOSE 8080 9200 3306
+EXPOSE 8081 9200
 
 CMD [ "node", "app.js" ]
