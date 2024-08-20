@@ -1,6 +1,6 @@
 FROM node:20.15.1-slim
 
-ENV PORT 8080
+ENV PORT 8081
 ENV NODE_ENV production
 
 WORKDIR /usr/src/app
