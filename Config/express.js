@@ -50,17 +50,15 @@ module.exports = function(app) {
   app.use("/service/datasets", datasetRouter);
   app.use("/service/documents", documentRouter);
   app.use("/service/application", applicationRouter);
-  app.get("/service/files/submissiontemplate", (req, res) => {
-    res.download("Public/Childhood_Cancer_Data_Catalog_Submission_Template.xlsx");
-  });
-  app.get("/service/files/userGuide", (req, res) => {
-    res.download("Public/User Guide for CCDC v1.1.0.pdf");
-  });
 
   app.get("/", (req, res) => {
-    res.send("Hi, welcome to CCDC!");
+    res.send("Hi, welcome to INS REST Service!");
   });
-
+	
+ app.get("/ping", (req, res) => {
+    res.send("pong!");
+  });
+	
   app.get("*", (req, res) => {
     res.sendFile("Public/index.html", { root: config.root });
   });
