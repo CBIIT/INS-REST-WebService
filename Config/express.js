@@ -70,6 +70,6 @@ module.exports = function(app) {
 
   app.use((err, req, res, next) => {
     res.status(err.status || 500);
-    res.send("Service unavailable for this URL.");
+    res.send("The requested URL is currently unavailable.");
   });
 };
