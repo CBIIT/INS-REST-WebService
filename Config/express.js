@@ -59,17 +59,15 @@ module.exports = function(app) {
     res.send("pong!");
   });
 	
-  app.get("*", (req, res) => {
-    res.sendFile("Public/index.html", { root: config.root });
-  });
 
   // catch 404 and forward to error handler
   app.use((req, res, next) => {
+    console.log(req)
     next(createError(404));
   });
 
   app.use((err, req, res, next) => {
     res.status(err.status || 500);
-    res.send(req);
+    res.send(err);
   });
 };
