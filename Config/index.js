@@ -10,7 +10,7 @@ if (!cfg.error) {
         SOFTWARE_VERSION: tmp.SOFTWARE_VERSION,
         ORIGIN_DOMAIN: tmp.ORIGIN_DOMAIN,
         NODE_ENV: tmp.NODE_ENV,
-        PORT: tmp.SERVICE_PORT || 3000,
+        PORT: tmp.SERVICE_PORT || 8081,
         LOGDIR: tmp.LOGDIR,
         AUTHSECRET: tmp.AUTHSECRET,
         LOG_LEVEL: tmp.LOG_LEVEL,
@@ -29,7 +29,7 @@ var config = {
   root: path.resolve(__dirname, "../../"),
 
   // Server port
-  port: process.env.PORT || 3000,
+  port: process.env.PORT || 8081,
 
   // Server port
   logDir: process.env.LOGDIR || "/local/content/ccdc/logs",
