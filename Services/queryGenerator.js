@@ -314,6 +314,7 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options) => {
         };
         dsl.nested.query.bool.should.push(m);
         */
+        /*
         m = {};
         m.nested = {};
         m.nested.path = "additional.attr_set";
@@ -321,7 +322,8 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options) => {
         m.nested.query.match = {};
         m.nested.query.match["additional.attr_set.k"] = {"query":searchTerm};
         dsl.nested.query.bool.should.push(m);
-        // clause.bool.should.push(dsl);
+        clause.bool.should.push(dsl);
+        */
         compoundQuery.bool.must.push(clause);
       }
     });
@@ -355,7 +357,7 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options) => {
   body.sort = [];
   let tmp = {};
   tmp[options.sort.k] = options.sort.v;
-  // body.sort.push(tmp);
+  body.sort.push(tmp);
   body.highlight = {
     pre_tags: ["<b>"],
     post_tags: ["</b>"],
