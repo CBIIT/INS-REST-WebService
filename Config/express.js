@@ -51,11 +51,11 @@ module.exports = function(app) {
   app.use("/service/documents", documentRouter);
   app.use("/service/application", applicationRouter);
 
-  app.get("/", (req, res) => {
+  app.get("/service/", (req, res) => {
     res.send("Hi, welcome to INS REST Service!");
   });
   
- app.get("/ping", (req, res) => {
+ app.get("/service/ping", (req, res) => {
     res.send("pong!");
   });
   
