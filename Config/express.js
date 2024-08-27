@@ -49,6 +49,7 @@ module.exports = function(app) {
   app.use("/service/documents", documentRouter);
   app.use("/service/application", applicationRouter);
 
+
   app.get("/service", (req, res) => {
     res.send("Hi, welcome to INS REST Service!");
   });
