@@ -17,8 +17,6 @@ module.exports = function(app) {
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
   app.use(cookieParser());
-  app.use(express.static(path.resolve(config.root, "Public")));
-  
   app.use(compression());
   
   app.use(function (req, res, next) {
@@ -37,41 +35,41 @@ module.exports = function(app) {
     //   res.header('Access-Control-Allow-Origin', req.headers.origin);
     // }
     res.header("Access-Control-Allow-Origin", "*");
-		res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");
-		res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.header("Access-Control-Allow-Methods", "GET,PUT,POST,DELETE");
+    res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
-		if (next) {
-			next();
-		}
-	});
+    if (next) {
+      next();
+    }
+  });
 
   //Routers
   app.use("/service/dataresources", dataresourceRouter);
   app.use("/service/datasets", datasetRouter);
   app.use("/service/documents", documentRouter);
   app.use("/service/application", applicationRouter);
-  app.get("/service/files/submissiontemplate", (req, res) => {
-    res.download("Public/Childhood_Cancer_Data_Catalog_Submission_Template.xlsx");
-  });
-  app.get("/service/files/userGuide", (req, res) => {
-    res.download("Public/User Guide for CCDC v1.1.0.pdf");
-  });
 
-  app.get("/", (req, res) => {
-    res.send("Hi, welcome to CCDC!");
-  });
 
-  app.get("*", (req, res) => {
-    res.sendFile("Public/index.html", { root: config.root });
+  app.get("/service", (req, res) => {
+    res.send("Hi, welcome to INS REST Service!");
   });
+  
+ app.get("/service/ping", (req, res) => {
+    res.send("pong!");
+  });
+  
 
   // catch 404 and forward to error handler
   app.use((req, res, next) => {
+    console.error(req.path)
+    console.log(req.path)
     next(createError(404));
   });
 
   app.use((err, req, res, next) => {
+      console.error(err)
+     console.log(err)
     res.status(err.status || 500);
-    res.send("Service unavailable for this URL.");
+    res.send(err);
   });
 };

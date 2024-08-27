@@ -19,6 +19,7 @@ const startServer = async () => {
     app.listen(config.port, () => {
       logger.info("Server listening on %d, in %s mode", config.port, config.env);
     });
+
   } catch (error) {
     logger.error("Error starting server:", error);
   }

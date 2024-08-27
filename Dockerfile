@@ -1,6 +1,6 @@
 FROM node:20.15.1-slim
 
-ENV PORT 8080
+ENV PORT 8081
 ENV NODE_ENV production
 
 WORKDIR /usr/src/app
@@ -13,6 +13,6 @@ RUN npm ci --only=production
 
 COPY --chown=node:node . .
 
-EXPOSE 8080 9200 3306
+EXPOSE 8081 9200
 
 CMD [ "node", "app.js" ]
