@@ -143,23 +143,22 @@ const searchById = async (id) => {
 };
 
 const getFilters = async () => {
-  return {'foo': 'bar'};
-  let drKey = cacheKeyGenerator.dataresourcesKey();
-  let dataresourcesAll = cache.getValue(drKey);
-  if (!dataresourcesAll) {
-    return dataresourcesAll;
+  let filtersKey = cacheKeyGenerator.datasetsFilterKey();
+  let filters = cache.getValue(filtersKey);
+  if (filters) {
+    return filters;
   }
-  //querying elasticsearch, save to dataresources cache
-  let query = queryGenerator.getDataresourcesQuery();
-  let drs = await elasticsearch.search(config.indexDS, query);
-  dataresourcesAll = drs.hits.map((dr) => {
-    return dr._source;
+  //querying elasticsearch, save to datasets cache
+  let query = queryGenerator.getDatasetFiltersQuery();
+  let filtersResponse = await elasticsearch.search(config.indexDS, query);
+  filters = filtersResponse.hits.map((filter) => {
+    return filter._source;
   });
-  dataresourcesAll.sort((firstEL, secondEL) => {
+  filters.sort((firstEL, secondEL) => {
     //return secondEL.count > firstEL.count ? 1 : -1;
     return secondEL.data_resource_id.toLowerCase() < firstEL.data_resource_id.toLowerCase() ? 1 : -1;
   });
-  cache.setValue(drKey, dataresourcesAll, config.itemTTL);
+  cache.setValue(filtersKey, filters, config.itemTTL);
 };
 
 const getAdvancedFilters = async () => {

@@ -4,8 +4,8 @@ cacheKeyGenerator.landingKey = () => {
   return "dr_landing";
 };
 
-cacheKeyGenerator.dataresourcesKey = () => {
-  return "dr_all";
+cacheKeyGenerator.datasetsFilterKey = () => {
+  return "ds_filters";
 };
 
 cacheKeyGenerator.datasetsCountKey = () => {
