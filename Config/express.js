@@ -7,7 +7,6 @@ const createError = require("http-errors");
 const bodyParser = require('body-parser');
 const config = require("./index");
 
-const dataresourceRouter = require("../Routes/dataresource.routes");
 const datasetRouter = require("../Routes/dataset.routes");
 const documentRouter = require("../Routes/document.routes");
 const applicationRouter = require("../Routes/application.routes");
@@ -44,7 +43,6 @@ module.exports = function(app) {
   });
 
   //Routers
-  app.use("/service/dataresources", dataresourceRouter);
   app.use("/service/datasets", datasetRouter);
   app.use("/service/documents", documentRouter);
   app.use("/service/application", applicationRouter);

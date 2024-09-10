@@ -4,7 +4,6 @@ const cache = require("../Components/cache");
 const mysql = require("../Components/mysql");
 const queryGenerator = require("./queryGenerator");
 const cacheKeyGenerator = require("./cacheKeyGenerator");
-const dataresourceService = require("./dataresource.service");
 const utils = require("../Utils");
 
 const search = async (searchText, filters, options) => {
@@ -144,64 +143,23 @@ const searchById = async (id) => {
 };
 
 const getFilters = async () => {
-  let filtersKey = cacheKeyGenerator.filtersKey();
-  let filters = cache.getValue(filtersKey);
-  if(!filters){
-    //querying elasticsearch, save to dataresources cache
-    //let sql = "select lt.term_name as name, lvs.permissible_value as value from lu_terms lt, lu_value_set lvs where lt.id = lvs.term_id and lt.term_name in (?,?,?,?,?,?,?,?,?,?,?,?)";
-    let sql = "select data_element, element_value, dataset_count from aggragation where data_element in (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
-
-    let inserts = [
-      "Case Disease Diagnosis",
-      "Sample Is Cell Line",
-      "Case Tumor Site",
-      "Case Treatment Administered",
-      "Sample Assay Method",
-      "Sample Analyte Type",
-      "Sample Composition Type",
-      "Case Age at Diagnosis",
-      "Case Ethnicity",
-      "Case Race",
-      "Case Sex",
-      "Research Data Repository",
-      "Program",
-      "Catalog",
-      "Registry"
-    ];
-    sql = mysql.format(sql, inserts);
-    const result = await mysql.query(sql);
-    //group by data
-    filters = {};
-    let dsAll = await dataresourceService.getAll();
-    let dsDictionary = {};
-    dsAll.forEach((ds) => {
-      dsDictionary[ds.data_resource_id] = ds;
-    });
-    if(result.length > 0){
-      result.map((kv) => {
-        if(!filters[kv.data_element]){
-          filters[kv.data_element] = [];
-        }
-        if(["Research Data Repository","Program", "Catalog", "Registry"].indexOf(kv.data_element) > -1){
-          filters[kv.data_element].push({name: kv.element_value, label: dsDictionary[kv.element_value].resource_name,  count: kv.dataset_count});
-        } else{
-          filters[kv.data_element].push({name: kv.element_value, count: kv.dataset_count});
-        }
-      });
-      //sort and top n
-      for(let k in filters){
-        const tmp = filters[k];
-        tmp.sort((firstEL, secondEL) => {
-          //return secondEL.count > firstEL.count ? 1 : -1;
-          return secondEL.name < firstEL.name ? 1 : -1;
-        });
-        filters[k] = tmp.length > config.limitFilterCount ? tmp.slice(0, config.limitFilterCount) : tmp;
-      }
-      cache.setValue(filtersKey, filters, config.itemTTL);
-    }
+  return {'foo': 'bar'};
+  let drKey = cacheKeyGenerator.dataresourcesKey();
+  let dataresourcesAll = cache.getValue(drKey);
+  if (!dataresourcesAll) {
+    return dataresourcesAll;
   }
-
-  return filters;
+  //querying elasticsearch, save to dataresources cache
+  let query = queryGenerator.getDataresourcesQuery();
+  let drs = await elasticsearch.search(config.indexDS, query);
+  dataresourcesAll = drs.hits.map((dr) => {
+    return dr._source;
+  });
+  dataresourcesAll.sort((firstEL, secondEL) => {
+    //return secondEL.count > firstEL.count ? 1 : -1;
+    return secondEL.data_resource_id.toLowerCase() < firstEL.data_resource_id.toLowerCase() ? 1 : -1;
+  });
+  cache.setValue(drKey, dataresourcesAll, config.itemTTL);
 };
 
 const getAdvancedFilters = async () => {
