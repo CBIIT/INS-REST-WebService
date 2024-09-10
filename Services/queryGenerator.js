@@ -9,7 +9,7 @@ queryGenerator.getDatasetFiltersQuery = () => {
 
   const aggs = {};
   const body = {
-    size: 1000,
+    size: 0,
   };
 
   // Aggregate on filter fields

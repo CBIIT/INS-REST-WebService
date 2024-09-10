@@ -143,22 +143,26 @@ const searchById = async (id) => {
 };
 
 const getFilters = async () => {
-  let filtersKey = cacheKeyGenerator.datasetsFilterKey();
+  const filtersKey = cacheKeyGenerator.datasetsFilterKey();
   let filters = cache.getValue(filtersKey);
+
+  // Return result if already cached
   if (filters) {
     return filters;
   }
-  //querying elasticsearch, save to datasets cache
-  let query = queryGenerator.getDatasetFiltersQuery();
-  let filtersResponse = await elasticsearch.search(config.indexDS, query);
-  filters = filtersResponse.hits.map((filter) => {
-    return filter._source;
-  });
-  filters.sort((firstEL, secondEL) => {
-    //return secondEL.count > firstEL.count ? 1 : -1;
-    return secondEL.data_resource_id.toLowerCase() < firstEL.data_resource_id.toLowerCase() ? 1 : -1;
+
+  // Query Opensearch and cache results
+  const query = queryGenerator.getDatasetFiltersQuery();
+  const filtersResponse = await elasticsearch.searchWithAggregations(config.indexDS, query);
+  filters = {};
+  Object.entries(filtersResponse.aggs).forEach(([fieldName, results]) => {
+    filters[fieldName] = results.buckets.map((bucket) => {
+      return bucket.key;
+    });
   });
   cache.setValue(filtersKey, filters, config.itemTTL);
+
+  return filters;
 };
 
 const getAdvancedFilters = async () => {
