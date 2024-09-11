@@ -159,6 +159,7 @@ const getFilters = async () => {
     filters[fieldName] = results.buckets.map((bucket) => {
       return bucket.key;
     });
+    filters[fieldName].sort();
   });
   cache.setValue(filtersKey, filters, config.itemTTL);
 
