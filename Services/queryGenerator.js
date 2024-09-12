@@ -2,18 +2,26 @@ const config = require("../Config");
 
 let queryGenerator = {};
 
-queryGenerator.getDataresourcesQuery = () => {
-  let dsl = {};
-  dsl.match_all = {};
+queryGenerator.getDatasetFiltersQuery = () => {
+  const FILTER_FIELDS = [
+    'primary_disease',
+  ];
 
-  let body = {
-    size: 1000,
-    from: 0
+  const aggs = {};
+  const body = {
+    size: 0,
   };
-  body.query = dsl;
-  // body.sort = [{
-  //   "data_resource_id": "asc"
-  // }];
+
+  // Aggregate on filter fields
+  FILTER_FIELDS.forEach((fieldName) => {
+    aggs[fieldName] = {
+      'terms': {
+        'field': fieldName
+      }
+    }
+  });
+
+  body.aggs = aggs;
   
   return body;
 };
