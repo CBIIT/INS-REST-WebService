@@ -16,7 +16,10 @@ queryGenerator.getDatasetFiltersQuery = () => {
   FILTER_FIELDS.forEach((fieldName) => {
     aggs[fieldName] = {
       'terms': {
-        'field': fieldName
+        'field': fieldName,
+        'order': {
+          '_key': 'asc'
+        }
       }
     }
   });

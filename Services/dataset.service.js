@@ -157,9 +157,11 @@ const getFilters = async () => {
   filters = {};
   Object.entries(filtersResponse.aggs).forEach(([fieldName, results]) => {
     filters[fieldName] = results.buckets.map((bucket) => {
-      return bucket.key;
+      return {
+        'name': bucket.key,
+        'count': 12345
+      };
     });
-    filters[fieldName].sort();
   });
   cache.setValue(filtersKey, filters, config.itemTTL);
 
