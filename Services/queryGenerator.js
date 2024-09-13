@@ -238,7 +238,7 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options) => {
           'related_genes',
           'related_diseases',
           'related_terms',
-        ];
+        ].map((field) => `${field}.search`);
         clause.bool.should.push(dsl);
         let nestedFields = [
         // "case_age.k",
