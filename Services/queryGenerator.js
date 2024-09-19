@@ -235,7 +235,7 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options) => {
           'related_genes',
           'related_diseases',
           'related_terms',
-        ];
+        ].map((field) => `${field}.search`);
         clause.bool.should.push(dsl);
         let nestedFields = [
         // "case_age.k",
@@ -345,8 +345,8 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options) => {
     filters.forEach((filter) => {
       let dsl = {};
       dsl.term = {};
-      dsl.term.data_resource_id = filter;
-      // clause.bool.should.push(dsl);
+      dsl.term.primary_disease = filter;
+      clause.bool.should.push(dsl);
     });
     compoundQuery.bool.must.push(clause);
   }

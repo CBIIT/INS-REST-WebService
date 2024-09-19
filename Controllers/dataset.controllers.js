@@ -7,10 +7,10 @@ const datasetService = require("../Services/dataset.service");
 
 const search = async (req, res) => {
     const body = req.body;
-    let searchText = body.search_text ? body.search_text.trim() : "";
-    let filters = body.resources_filter ? body.resources_filter : [];
-    let pageInfo = body.pageInfo ? body.pageInfo : {page: 1, pageSize: 10};
-    let sort = body.sort ? body.sort : {k: "data_resource_id", v: "asc"};
+    let searchText = body.search_text?.trim() ?? "";
+    let filters = body.filters ?? [];
+    let pageInfo = body.pageInfo ?? {page: 1, pageSize: 10};
+    let sort = body.sort ?? {k: "data_resource_id", v: "asc"};
     if (pageInfo.page !== parseInt(pageInfo.page, 10) || pageInfo.page <= 0) {
       pageInfo.page = 1;
     }
