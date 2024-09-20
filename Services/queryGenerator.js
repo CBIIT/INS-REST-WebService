@@ -341,16 +341,18 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options) => {
     
   }
 
-  if (filters.length > 0) {
-    let clause = {};
-    clause.bool = {};
-    clause.bool.should = [];
-    filters.forEach((filter) => {
-      let dsl = {};
-      dsl.term = {};
-      dsl.term.data_resource_id = filter;
-      // clause.bool.should.push(dsl);
-    });
+  if (Object.entries(filters).length > 0) {
+    const clause = {
+      'bool': {
+        'should': Object.entries(filters).map(([field, values]) => {
+          return {
+            'terms': {
+              [field]: values
+            }
+          }
+        })
+      }
+    };
     compoundQuery.bool.must.push(clause);
   }
 
