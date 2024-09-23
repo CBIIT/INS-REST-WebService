@@ -151,8 +151,13 @@ const searchById = async (id) => {
   return dataset;
 };
 
-const getFilters = async () => {
-  const filtersKey = cacheKeyGenerator.datasetsFilterKey();
+/**
+ * Obtains facet filters and counts for the Explore Datasets sidebar
+ *
+ * @returns {Map<string, Map<string, string>[]>} Map of filters with a list of their values and counts
+ */
+const getFilters = async (searchText, searchFilters) => {
+  const filtersKey = cacheKeyGenerator.datasetsFilterKey(searchText, searchFilters);
   let filters = cache.getValue(filtersKey);
 
   // Return result if already cached
@@ -161,7 +166,7 @@ const getFilters = async () => {
   }
 
   // Query Opensearch and cache results
-  const query = queryGenerator.getDatasetFiltersQuery();
+  const query = queryGenerator.getDatasetFiltersQuery(searchText, searchFilters);
   const filtersResponse = await elasticsearch.searchWithAggregations(config.indexDS, query);
   filters = {};
   Object.entries(filtersResponse.aggs).forEach(([fieldName, results]) => {
