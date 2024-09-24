@@ -12,8 +12,8 @@ cacheKeyGenerator.datasetsCountKey = () => {
   return "ds_counts";
 };
 
-cacheKeyGenerator.filtersKey = () => {
-  return "ds_filters";
+cacheKeyGenerator.filtersKey = (searchText, searchFilters) => {
+  return `ds_filters_${searchText}_${searchFilters}`;
 };
 
 cacheKeyGenerator.participatingResourcesFiltersKey = () => {

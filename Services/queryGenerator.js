@@ -2,33 +2,6 @@ const config = require("../Config");
 
 let queryGenerator = {};
 
-queryGenerator.getDatasetFiltersQuery = () => {
-  const FILTER_FIELDS = [
-    'primary_disease',
-  ];
-
-  const aggs = {};
-  const body = {
-    size: 0,
-  };
-
-  // Aggregate on filter fields
-  FILTER_FIELDS.forEach((fieldName) => {
-    aggs[fieldName] = {
-      'terms': {
-        'field': fieldName,
-        'order': {
-          '_key': 'asc'
-        }
-      }
-    }
-  });
-
-  body.aggs = aggs;
-  
-  return body;
-};
-
 queryGenerator.getSearchAggregationQuery = (searchText) => {
   let body = {
     size: 10,
@@ -175,10 +148,12 @@ queryGenerator.getSearchAggregationQuery = (searchText) => {
 };
 
 queryGenerator.getSearchQueryV2 = (searchText, filters, options) => {
-  let body = {
-    size: options.pageInfo.pageSize,
-    from: (options.pageInfo.page - 1 ) * options.pageInfo.pageSize
-  };
+  const body = {};
+
+  if (options) {
+    body.size = options.pageInfo.pageSize;
+    body.from = (options.pageInfo.page - 1 ) * options.pageInfo.pageSize;
+  }
 
   let compoundQuery = {};
   compoundQuery.bool = {};
@@ -367,10 +342,14 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options) => {
   agg.myAgg.terms.size = 1000;
 
   // body.aggs = agg;
-  body.sort = [];
-  let tmp = {};
-  tmp[options.sort.k] = options.sort.v;
-  body.sort.push(tmp);
+  // Add sort parameters
+  if (options?.sort) {
+    body.sort = [];
+    const tmp = {};
+    tmp[options.sort.k] = options.sort.v;
+    body.sort.push(tmp);
+  }
+
   body.highlight = {
     pre_tags: ["<b>"],
     post_tags: ["</b>"],
@@ -407,6 +386,35 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options) => {
     },
   };
   return body;
+};
+
+// Generates a bucket aggregation query on dataset properties
+queryGenerator.getDatasetFiltersQuery = (searchText, searchFilters) => {
+  // Borrow some of the search query
+  const query = queryGenerator.getSearchQueryV2(searchText, searchFilters);
+
+  // Customize search query
+  query.aggs = {};
+  query.size = 0;
+  delete query.highlight;
+
+  const BUCKET_FIELDS = [
+    'primary_disease',
+  ];
+
+  // Aggregate on filter fields
+  BUCKET_FIELDS.forEach((fieldName) => {
+    query.aggs[fieldName] = {
+      'terms': {
+        'field': fieldName,
+        'order': {
+          '_key': 'asc'
+        }
+      }
+    }
+  });
+
+  return query;
 };
 
 queryGenerator.getParticipatingResourcesSearchQuery = (filters, options) => {

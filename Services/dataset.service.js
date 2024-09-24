@@ -63,10 +63,19 @@ const search = async (searchText, filters, options) => {
 const export2CSV = async (searchText, filters, options) => {
   let query = queryGenerator.getSearchQueryV2(searchText, filters, options);
   let searchResults = await elasticsearch.search(config.indexDS, query);
-  let dataElements = ["case_disease_diagnosis", "case_age_at_diagnosis",
-   "case_ethnicity", "case_race", "case_sex", "case_gender", "case_tumor_site",
-    "case_treatment_administered", "case_treatment_outcome", "sample_assay_method", "sample_analyte_type", "sample_anatomic_site", "sample_composition_type", "sample_is_cell_line","sample_is_normal", "sample_is_xenograft"];
-  let additionalDataElements = ["dbGaP Study Identifier", "GEO Study Identifier", "Clinical Trial Identifier", "SRA Study Identifier", "Data Repository", "Grant ID", "Grant Name", "Grant"];
+  let dataElements = [
+    "case_disease_diagnosis", "case_age_at_diagnosis", "case_ethnicity",
+    "case_race", "case_sex", "case_gender", "case_tumor_site",
+    "case_treatment_administered", "case_treatment_outcome",
+    "sample_assay_method", "sample_analyte_type", "sample_anatomic_site",
+    "sample_composition_type", "sample_is_cell_line","sample_is_normal",
+    "sample_is_xenograft"
+  ];
+  let additionalDataElements = [
+    "dbGaP Study Identifier", "GEO Study Identifier",
+    "Clinical Trial Identifier", "SRA Study Identifier", "Data Repository",
+    "Grant ID", "Grant Name", "Grant"
+  ];
   let datasets = searchResults.hits.map((ds) => {
     let tmp = ds._source;
     dataElements.forEach((de) => {
@@ -142,8 +151,13 @@ const searchById = async (id) => {
   return dataset;
 };
 
-const getFilters = async () => {
-  const filtersKey = cacheKeyGenerator.datasetsFilterKey();
+/**
+ * Obtains facet filters and counts for the Explore Datasets sidebar
+ *
+ * @returns {Map<string, Map<string, string>[]>} Map of filters with a list of their values and counts
+ */
+const getFilters = async (searchText, searchFilters) => {
+  const filtersKey = cacheKeyGenerator.datasetsFilterKey(searchText, searchFilters);
   let filters = cache.getValue(filtersKey);
 
   // Return result if already cached
@@ -152,16 +166,14 @@ const getFilters = async () => {
   }
 
   // Query Opensearch and cache results
-  const query = queryGenerator.getDatasetFiltersQuery();
+  const query = queryGenerator.getDatasetFiltersQuery(searchText, searchFilters);
   const filtersResponse = await elasticsearch.searchWithAggregations(config.indexDS, query);
   filters = {};
   Object.entries(filtersResponse.aggs).forEach(([fieldName, results]) => {
-    filters[fieldName] = results.buckets.map((bucket) => {
-      return {
-        'name': bucket.key,
-        'count': 12345
-      };
-    });
+    filters[fieldName] = results.buckets.map((bucket) => ({
+      'name': bucket.key,
+      'count': bucket.doc_count
+    }));
   });
   cache.setValue(filtersKey, filters, config.itemTTL);
 

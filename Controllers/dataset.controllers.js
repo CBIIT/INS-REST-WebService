@@ -275,7 +275,12 @@ const getById = async (req, res) => {
 };
 
 const getFilters = async (req, res) => {
-  let filters = await datasetService.getFilters();
+  const body = req.body;
+  const searchText = body.search_text?.trim() ?? "";
+  const searchFilters = body.filters ?? {};
+
+  const filters = await datasetService.getFilters(searchText, searchFilters);
+
   res.json({status: "success", data: filters});
 };
 
