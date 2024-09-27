@@ -7,7 +7,6 @@ const createError = require("http-errors");
 const bodyParser = require('body-parser');
 const config = require("./index");
 
-const dataresourceRouter = require("../Routes/dataresource.routes");
 const datasetRouter = require("../Routes/dataset.routes");
 const documentRouter = require("../Routes/document.routes");
 const applicationRouter = require("../Routes/application.routes");
@@ -17,8 +16,6 @@ module.exports = function(app) {
   app.use(express.json());
   app.use(express.urlencoded({ extended: false }));
   app.use(cookieParser());
-  app.use(express.static(path.resolve(config.root, "Public")));
-  
   app.use(compression());
   
   app.use(function (req, res, next) {
@@ -46,12 +43,12 @@ module.exports = function(app) {
   });
 
   //Routers
-  app.use("/service/dataresources", dataresourceRouter);
   app.use("/service/datasets", datasetRouter);
   app.use("/service/documents", documentRouter);
   app.use("/service/application", applicationRouter);
 
-  app.get("/service/", (req, res) => {
+
+  app.get("/service", (req, res) => {
     res.send("Hi, welcome to INS REST Service!");
   });
   
