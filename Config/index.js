@@ -10,7 +10,7 @@ if (!cfg.error) {
         SOFTWARE_VERSION: tmp.SOFTWARE_VERSION,
         ORIGIN_DOMAIN: tmp.ORIGIN_DOMAIN,
         NODE_ENV: tmp.NODE_ENV,
-        PORT: tmp.SERVICE_PORT,
+        PORT: tmp.SERVICE_PORT || 8081,
         LOGDIR: tmp.LOGDIR,
         AUTHSECRET: tmp.AUTHSECRET,
         LOG_LEVEL: tmp.LOG_LEVEL,
@@ -29,7 +29,7 @@ var config = {
   root: path.resolve(__dirname, "../../"),
 
   // Server port
-  port: process.env.PORT || 3000,
+  port: process.env.PORT || 8081,
 
   // Server port
   logDir: process.env.LOGDIR || "/local/content/ccdc/logs",
@@ -109,10 +109,9 @@ var config = {
     db : process.env.RDB_NAME || "ccdc"
   },
 
-  //elasticsearch connection
-  elasticsearch: {
-    host: process.env.ES_HOST || "http://127.0.0.1:9200",
-		requestTimeout: 30000
+    elasticsearch: {
+    host: process.env.ES_PROTOCOL || "https" + "://" + (process.env.ES_HOST || "127.0.0.1:9200"),
+    requestTimeout: 30000
   },
 
 };

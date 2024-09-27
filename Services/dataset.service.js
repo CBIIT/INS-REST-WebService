@@ -4,13 +4,12 @@ const cache = require("../Components/cache");
 const mysql = require("../Components/mysql");
 const queryGenerator = require("./queryGenerator");
 const cacheKeyGenerator = require("./cacheKeyGenerator");
-const dataresourceService = require("./dataresource.service");
 const utils = require("../Utils");
 
 const search = async (searchText, filters, options) => {
   let result = {};
   let searchableText = utils.getSearchableText(searchText);
-  if (searchableText !== "") {
+  if (false && searchableText !== "") {
     let aggregationKey = cacheKeyGenerator.getAggregationKey(searchableText);
     let aggregation = cache.getValue(aggregationKey);
     if(!aggregation){
@@ -64,10 +63,19 @@ const search = async (searchText, filters, options) => {
 const export2CSV = async (searchText, filters, options) => {
   let query = queryGenerator.getSearchQueryV2(searchText, filters, options);
   let searchResults = await elasticsearch.search(config.indexDS, query);
-  let dataElements = ["case_disease_diagnosis", "case_age_at_diagnosis",
-   "case_ethnicity", "case_race", "case_sex", "case_gender", "case_tumor_site",
-    "case_treatment_administered", "case_treatment_outcome", "sample_assay_method", "sample_analyte_type", "sample_anatomic_site", "sample_composition_type", "sample_is_cell_line","sample_is_normal", "sample_is_xenograft"];
-  let additionalDataElements = ["dbGaP Study Identifier", "GEO Study Identifier", "Clinical Trial Identifier", "SRA Study Identifier", "Data Repository", "Grant ID", "Grant Name", "Grant"];
+  let dataElements = [
+    "case_disease_diagnosis", "case_age_at_diagnosis", "case_ethnicity",
+    "case_race", "case_sex", "case_gender", "case_tumor_site",
+    "case_treatment_administered", "case_treatment_outcome",
+    "sample_assay_method", "sample_analyte_type", "sample_anatomic_site",
+    "sample_composition_type", "sample_is_cell_line","sample_is_normal",
+    "sample_is_xenograft"
+  ];
+  let additionalDataElements = [
+    "dbGaP Study Identifier", "GEO Study Identifier",
+    "Clinical Trial Identifier", "SRA Study Identifier", "Data Repository",
+    "Grant ID", "Grant Name", "Grant"
+  ];
   let datasets = searchResults.hits.map((ds) => {
     let tmp = ds._source;
     dataElements.forEach((de) => {
@@ -143,63 +151,31 @@ const searchById = async (id) => {
   return dataset;
 };
 
-const getFilters = async () => {
-  let filtersKey = cacheKeyGenerator.filtersKey();
+/**
+ * Obtains facet filters and counts for the Explore Datasets sidebar
+ *
+ * @returns {Map<string, Map<string, string>[]>} Map of filters with a list of their values and counts
+ */
+const getFilters = async (searchText, searchFilters) => {
+  const filtersKey = cacheKeyGenerator.datasetsFilterKey(searchText, searchFilters);
   let filters = cache.getValue(filtersKey);
-  if(!filters){
-    //querying elasticsearch, save to dataresources cache
-    //let sql = "select lt.term_name as name, lvs.permissible_value as value from lu_terms lt, lu_value_set lvs where lt.id = lvs.term_id and lt.term_name in (?,?,?,?,?,?,?,?,?,?,?,?)";
-    let sql = "select data_element, element_value, dataset_count from aggragation where data_element in (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
-    let inserts = [
-      "Case Disease Diagnosis",
-      "Sample Is Cell Line",
-      "Case Tumor Site",
-      "Case Treatment Administered",
-      "Sample Assay Method",
-      "Sample Analyte Type",
-      "Sample Composition Type",
-      "Case Age at Diagnosis",
-      "Case Ethnicity",
-      "Case Race",
-      "Case Sex",
-      "Research Data Repository",
-      "Program",
-      "Catalog",
-      "Registry"
-    ];
-    sql = mysql.format(sql, inserts);
-    const result = await mysql.query(sql);
-    //group by data
-    filters = {};
-    let dsAll = await dataresourceService.getAll();
-    let dsDictionary = {};
-    dsAll.forEach((ds) => {
-      dsDictionary[ds.data_resource_id] = ds;
-    });
-    if(result.length > 0){
-      result.map((kv) => {
-        if(!filters[kv.data_element]){
-          filters[kv.data_element] = [];
-        }
-        if(["Research Data Repository","Program", "Catalog", "Registry"].indexOf(kv.data_element) > -1){
-          filters[kv.data_element].push({name: kv.element_value, label: dsDictionary[kv.element_value].resource_name,  count: kv.dataset_count});
-        } else{
-          filters[kv.data_element].push({name: kv.element_value, count: kv.dataset_count});
-        }
-      });
-      //sort and top n
-      for(let k in filters){
-        const tmp = filters[k];
-        tmp.sort((firstEL, secondEL) => {
-          //return secondEL.count > firstEL.count ? 1 : -1;
-          return secondEL.name < firstEL.name ? 1 : -1;
-        });
-        filters[k] = tmp.length > config.limitFilterCount ? tmp.slice(0, config.limitFilterCount) : tmp;
-      }
-      cache.setValue(filtersKey, filters, config.itemTTL);
-    }
+  // Return result if already cached
+  if (filters) {
+    return filters;
   }
+
+  // Query Opensearch and cache results
+  const query = queryGenerator.getDatasetFiltersQuery(searchText, searchFilters);
+  const filtersResponse = await elasticsearch.searchWithAggregations(config.indexDS, query);
+  filters = {};
+  Object.entries(filtersResponse.aggs).forEach(([fieldName, results]) => {
+    filters[fieldName] = results.buckets.map((bucket) => ({
+      'name': bucket.key,
+      'count': bucket.doc_count
+    }));
+  });
+  cache.setValue(filtersKey, filters, config.itemTTL);
 
   return filters;
 };
