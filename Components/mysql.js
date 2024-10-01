@@ -1,45 +1,50 @@
 /**
- * client for mysql
+ * MySQL client
  */
 
 "use strict";
-var config = require("../Config");
-var mysql = require("mysql");
+const config = require("../Config");
+const mysql = require("mysql");
 const { promisify } = require("util");
 
-var pool = mysql.createPool({
-    connectionLimit : config.mysql.connectionLimit, 
-    connectTimeout: config.mysql.connectTimeout || (1000 * 60 * 20),
-    acquireTimeout: config.mysql.acquireTimeout || (1000 * 60 * 20),
-    host     : config.mysql.host,
-    user     : config.mysql.user,
-    password : config.mysql.password,
-    database : config.mysql.db,
-    multipleStatements: true,
-    debug    :  false
-});
+let pool = null;
 
-pool.getConnectionAsync = () => new Promise((resolve, reject) => {
-    pool.getConnection((error, connection) => {
-        if (error) {
-            reject(error);
-        }
-        else {
-            resolve(connection);
-        }
+if (config.mysql.host) {
+    pool = mysql.createPool({
+        connectionLimit: config.mysql.connectionLimit,
+        connectTimeout: config.mysql.connectTimeout || (1000 * 60 * 20),
+        acquireTimeout: config.mysql.acquireTimeout || (1000 * 60 * 20),
+        host: config.mysql.host,
+        user: config.mysql.user,
+        password: config.mysql.password,
+        database: config.mysql.db,
+        multipleStatements: true,
+        debug: false
     });
-});
 
-pool.query = promisify(pool.query).bind(pool);
+    pool.getConnectionAsync = () => {
+        return new Promise((resolve, reject) => {
+            pool.getConnection((error, connection) => {
+                if (error) {
+                    reject(error);
+                } else {
+                    resolve(connection);
+                }
+            });
+        });
+    };
 
-pool.format = (sql, inserts) => {
-  return mysql.format(sql, inserts);
-};
+    pool.query = promisify(pool.query).bind(pool);
 
-pool.close = () => {
-    if(pool){
-        pool.end();
-    }
-};
+    pool.format = (sql, inserts) => {
+        return mysql.format(sql, inserts);
+    };
+
+    pool.close = () => {
+        if (pool) {
+            pool.end();
+        }
+    };
+}
 
 module.exports = pool;
