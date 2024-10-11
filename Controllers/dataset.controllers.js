@@ -10,7 +10,7 @@ const search = async (req, res) => {
     const searchText = body.search_text?.trim() ?? "";
     const filters = body.filters ?? {};
     const pageInfo = body.pageInfo ?? {page: 1, pageSize: 10};
-    const sort = body.sort ?? {k: "data_resource_id", v: "asc"};
+    const sort = body.sort ?? {k: "dbGaP_phs", v: "asc"};
 
     if (pageInfo.page !== parseInt(pageInfo.page, 10) || pageInfo.page <= 0) {
       pageInfo.page = 1;
@@ -77,7 +77,7 @@ const export2CSV = async (req, res) => {
   let searchText = body.search_text ? body.search_text.trim() : "";
   let filters = body.resources_filter ? body.resources_filter : [];
   let pageInfo = {page: 1, pageSize: 5000};
-  let sort = body.sort ? body.sort : {k: "data_resource_id", v: "asc"};
+  let sort = body.sort ? body.sort : {k: "dbGaP_phs", v: "asc"};
   // if(sort.k === "primary_dataset_scope") {
   //   sort.name = "Primary Dataset Scope";
   //   sort.k = "primary_dataset_scope";
@@ -294,7 +294,7 @@ const getDatasetCount = async (req, res) => {
   let filters = [];
   let searchText = "";
   options.pageInfo = {page: 1, pageSize: 10};
-  options.sort = {k: "data_resource_id", v: "asc"};
+  options.sort = {k: "dbGaP_phs", v: "asc"};
   const searchResult = await datasetService.search(searchText, filters, options);
   res.json({status: "success", data: searchResult.total});
 }

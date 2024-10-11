@@ -140,7 +140,7 @@ queryGenerator.getSearchAggregationQuery = (searchText) => {
   let agg = {};
   agg.myAgg = {};
   agg.myAgg.terms = {};
-  agg.myAgg.terms.field = "data_resource_id";
+  agg.myAgg.terms.field = "dbGaP_phs";
   agg.myAgg.terms.size = 1000;
 
   // body.aggs = agg;
@@ -329,7 +329,7 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options) => {
   let agg = {};
   agg.myAgg = {};
   agg.myAgg.terms = {};
-  agg.myAgg.terms.field = "data_resource_id";
+  agg.myAgg.terms.field = "dbGaP_phs";
   agg.myAgg.terms.size = 1000;
 
   // body.aggs = agg;
