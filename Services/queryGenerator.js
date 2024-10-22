@@ -391,7 +391,8 @@ queryGenerator.getDatasetFiltersQuery = (searchText, searchFilters) => {
         'field': fieldName,
         'order': {
           '_key': 'asc'
-        }
+        },
+        'size': 100000
       }
     }
   });
