@@ -1,16 +1,19 @@
-const logger = require("../Components/logger");
-const cache = require("../Components/cache");
-const config = require("../Config");
-const path = require("path");
+const logger = require('../Components/logger');
+const cache = require('../Components/cache');
+const config = require('../Config');
+const path = require('path');
 const { Parser } = require('json2csv');
-const datasetService = require("../Services/dataset.service");
+const datasetFields = require('../Utils/datasetFields');
+const datasetService = require('../Services/dataset.service');
 
 const search = async (req, res) => {
     const body = req.body;
-    const searchText = body.search_text?.trim() ?? "";
+    const data = {};
     const filters = body.filters ?? {};
+    const options = {};
     const pageInfo = body.pageInfo ?? {page: 1, pageSize: 10};
-    const sort = body.sort ?? {k: "dbGaP_phs", v: "asc"};
+    const searchText = body.search_text?.trim() ?? '';
+    const sort = body.sort ?? {k: 'dbGaP_phs', v: 'asc'};
 
     if (pageInfo.page !== parseInt(pageInfo.page, 10) || pageInfo.page <= 0) {
       pageInfo.page = 1;
@@ -34,50 +37,44 @@ const search = async (req, res) => {
     //   sort.name = "Resource";
     //   sort.k = "data_resource_id";
     // }
-    if(!sort.v || ["asc", "desc"].indexOf(sort.v) === -1) {
-      sort.v = "asc";
+    if (!(sort.v && ['asc', 'desc'].includes(sort.v))) {
+      sort.v = 'asc';
     }
-    let options = {};
+
     options.pageInfo = pageInfo;
     options.sort = sort;
     const searchResult = await datasetService.search(searchText, filters, options);
-    let data = {};
     if (searchResult.total !== 0 && (options.pageInfo.page - 1) * options.pageInfo.pageSize >= searchResult.total) {
       let lastPage = Math.ceil(searchResult.total / options.pageInfo.pageSize);
       options.pageInfo.page = lastPage;
       const searchResultAgain = await datasetService.search(searchText, filters, options);
-      data.pageInfo = options.pageInfo;
       data.pageInfo.total = searchResultAgain.total;
-      data.sort = sort;
       data.result = searchResultAgain.data;
       data.aggs = searchResultAgain.aggs;
     } else {
-      data.pageInfo = options.pageInfo;
       data.pageInfo.total = searchResult.total;
-      data.sort = sort;
       data.result = searchResult.data;
       data.aggs = searchResult.aggs;
     }
-    res.json({status:"success", data: data});
-};
 
-const addURL = (sr, attId, attUrl, addUrl) => {
-  let URL = ''; 
-  sr[attId] && sr[attId].forEach((id, index) => {
-    URL =  URL + addUrl + id;
-    if (index < sr[attId].length-1) {
-      URL += ";";
-    }
-  });
-  sr[attUrl] = URL;
+    data.sort = sort;
+    data.pageInfo = options.pageInfo;
+    res.json({status:"success", data: data});
 };
 
 const export2CSV = async (req, res) => {
   const body = req.body;
-  let searchText = body.search_text ? body.search_text.trim() : "";
-  let filters = body.resources_filter ? body.resources_filter : [];
-  let pageInfo = {page: 1, pageSize: 5000};
-  let sort = body.sort ? body.sort : {k: "dbGaP_phs", v: "asc"};
+  const searchText = body.search_text?.trim() ?? "";
+  const filters = body.filters ?? {};
+  const pageInfo = {page: 1, pageSize: 5000};
+  const sort = body.sort ?? {k: "dbGaP_phs", v: "asc"};
+
+  if (pageInfo.page !== parseInt(pageInfo.page, 10) || pageInfo.page <= 0) {
+    pageInfo.page = 1;
+  }
+  if (pageInfo.pageSize !== parseInt(pageInfo.pageSize, 10) || pageInfo.pageSize <= 0) {
+    pageInfo.pageSize = 5000;
+  }
   // if(sort.k === "primary_dataset_scope") {
   //   sort.name = "Primary Dataset Scope";
   //   sort.k = "primary_dataset_scope";
@@ -94,175 +91,19 @@ const export2CSV = async (req, res) => {
   //   sort.name = "Resource";
   //   sort.k = "data_resource_id";
   // }
-  if(!sort.v || ["asc", "desc"].indexOf(sort.v) === -1) {
+  if (!(sort.v && ["asc", "desc"].includes(sort.v))) {
     sort.v = "asc";
   }
   let options = {};
   options.pageInfo = pageInfo;
   options.sort = sort;
   const searchResult = await datasetService.export2CSV(searchText, filters, options);
-  const fields = [
-    {
-      label: 'Dataset Title',
-      value: 'dataset_name'
-    },
-    {
-      label: 'Description',
-      value: 'desc'
-    },
-    {
-      label: "dbGaP Study Identifier",
-      value: "dbGaP Study Identifier"
-    },
-    {
-      label: "dbGap Study URL",
-      value: "dbGap Study URL"
-    },
-    {
-      label: "GEO Study Identifier",
-      value: "GEO Study Identifier"
-    },
-    {
-      label: "Clinical Trial Identifier",
-      value: "Clinical Trial Identifier"
-    },
-    {
-      label: "SRA Study Identifier",
-      value: "SRA Study Identifier"
-    },
-    {
-      label: 'Point of Contact',
-      value: 'poc'
-    },
-    {
-      label: 'Point of Contact Email',
-      value: 'poc_email'
-    },
-    {
-      label: "Data Repository URL",
-      value: "Data Repository"
-    },
-    {
-      label: 'Published In',
-      value: 'published_in'
-    },
-    {
-      label: "Number of Cases",
-      value: "case_id"
-    },
-    {
-      label: "Number of Samples",
-      value: "sample_id"
-    },
-    {
-      label: "Case Disease Diagnosis",
-      value: "case_disease_diagnosis"
-    },
-    {
-      label: "Case Age at Diagnosis",
-      value: "case_age_at_diagnosis"
-    },
-    {
-      label: "Case Ethnicity",
-      value: "case_ethnicity"
-    },
-    {
-      label: "Case Race",
-      value: "case_race"
-    },
-    {
-      label: "Case Sex",
-      value: "case_sex"
-    },
-    {
-      label: "Case Gender",
-      value: "case_gender"
-    },
-    {
-      label: "Case Tumor Site",
-      value: "case_tumor_site"
-    },
-    {
-      label: "Case Treatment Administered",
-      value: "case_treatment_administered"
-    },
-    {
-      label: "Case Treatment Outcome",
-      value: "case_treatment_outcome"
-    },
-    {
-      label: "Sample Assay Method",
-      value: "sample_assay_method"
-    },
-    {
-      label: "Sample Analyte Type",
-      value: "sample_analyte_type"
-    },
-    {
-      label: "Sample Anatomic Site",
-      value: "sample_anatomic_site"
-    },
-    {
-      label: "Sample Composition Type",
-      value: "sample_composition_type"
-    },
-    {
-      label: "Sample Is Cell Line",
-      value: "sample_is_cell_line"
-    },
-    {
-      label: "Sample is Normal",
-      value: "sample_is_normal"
-    },
-    {
-      label: "Sample is Xenograft",
-      value: "sample_is_xenograft"
-    },
-    {
-      label: "GEO Study URL",
-      value: "GEO Study URL"
-    },
-    {
-      label: "Clinical Trial URL",
-      value: "Clinical Trial URL"
-    },
-    {
-      label: "SRA Study URL",
-      value: "SRA Study URL"
-    },
-    {
-      label: "Grant ID",
-      value: "Grant ID"
-    },
-    {
-      label: "Grant Name",
-      value: "Grant Name"
-    },
-    {
-      label: "Additional Data",
-      value: "additional"
-    },
-    {
-      label: 'Primary Dataset Scope',
-      value: 'primary_dataset_scope'
-    },
-    {
-      label: 'Resource',
-      value: 'data_resource_id'
-    },
-    {
-      label: 'Dataset ID',
-      value: 'dataset_id'
-    },
-  ];
-  const json2csv = new Parser({ fields });
-  searchResult.forEach((sr) => {
-    addURL(sr, "dbGaP Study Identifier", "dbGap Study URL", "https://www.ncbi.nlm.nih.gov/projects/gap/cgi-bin/study.cgi?study_id=");
-    addURL(sr, "GEO Study Identifier", "GEO Study URL", "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=");
-    addURL(sr, "Clinical Trial Identifier", "Clinical Trial URL", "https://classic.clinicaltrials.gov/ct2/show/");
-    addURL(sr, "SRA Study Identifier", "SRA Study URL", "https://trace.ncbi.nlm.nih.gov/Traces/?view=study&acc=");
-  });
-  const csv = json2csv.parse(searchResult);
+  const csvFields = Object.entries(datasetFields).map(([naturalName, propertyName]) => ({
+    label: naturalName,
+    value: propertyName,
+  }));
+  const json2Csv = new Parser({ csvFields });
+  const csv = json2Csv.parse(searchResult);
   res.header('Content-Type', 'text/csv');
   res.attachment("export.csv");
   res.send(csv);

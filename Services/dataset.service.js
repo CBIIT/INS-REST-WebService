@@ -61,78 +61,10 @@ const search = async (searchText, filters, options) => {
 };
 
 const export2CSV = async (searchText, filters, options) => {
-  let query = queryGenerator.getSearchQueryV2(searchText, filters, options);
-  let searchResults = await elasticsearch.search(config.indexDS, query);
-  let dataElements = [
-    "case_disease_diagnosis", "case_age_at_diagnosis", "case_ethnicity",
-    "case_race", "case_sex", "case_gender", "case_tumor_site",
-    "case_treatment_administered", "case_treatment_outcome",
-    "sample_assay_method", "sample_analyte_type", "sample_anatomic_site",
-    "sample_composition_type", "sample_is_cell_line","sample_is_normal",
-    "sample_is_xenograft"
-  ];
-  let additionalDataElements = [
-    "dbGaP Study Identifier", "GEO Study Identifier",
-    "Clinical Trial Identifier", "SRA Study Identifier", "Data Repository",
-    "Grant ID", "Grant Name", "Grant"
-  ];
-  let datasets = searchResults.hits.map((ds) => {
-    let tmp = ds._source;
-    dataElements.forEach((de) => {
-      if(tmp[de]) {
-        tmp[de] = tmp[de].map((t) => {
-          return t.n + " (" + t.v + ")";
-        });
-      }
-    });
-    additionalDataElements.forEach((ade) => {
-      if (tmp.additional) {
-        tmp.additional.forEach((add) => {
-          if (ade === add.attr_name) {
-            tmp[ade] = add.attr_set.map((t) => {
-              return t.k;
-            });
-          }
-        })
-        if (tmp["Grant"] && tmp["Grant Name"]) {
-          tmp["Grant Name"] = tmp["Grant Name"].concat(tmp["Grant"]);
-        } else if (tmp["Grant"]) {
-          tmp["Grant Name"] = tmp["Grant"];
-        }
-      }
-    });
-    if(tmp.additional) {
-      tmp.additional = tmp.additional.map((t) => {
-        // add the element which is not in the additionalDataElements list
-        if (!additionalDataElements.includes(t.attr_name)) {
-          let sets = [];
-          t.attr_set.forEach((as) => {
-            sets.push(as.k);
-          });
-          return t.attr_name + " (" + sets.join() + ")";
-        }
-      });
-      tmp.additional = tmp.additional.filter(a=>a);
-      //when there is no element in tmp.additional array, return '' instead of []
-      if (tmp.additional.length === 0) {
-        tmp.additional = '';
-      }
-    }
-    if(tmp.projects) {
-      if (!tmp.additional) {
-        tmp.additional = [];
-      }
-      const ps = tmp.projects.map((p) => {
-        let sets = [];
-        p.p_v.forEach((pv) => {
-          sets.push(pv.k + " (" + pv.v + ")");
-        });
-        return p.p_k + ": " + sets.join();
-      });
-      tmp.additional.push("Projects {" + ps.join() + "}");
-    }
-    return ds._source;
-  });
+  const query = queryGenerator.getSearchQueryV2(searchText, filters, options);
+  const searchResults = await elasticsearch.search(config.indexDS, query);
+  const datasets = searchResults.hits.map((dataset) => dataset._source);
+
   return datasets;
 };
 
@@ -253,10 +185,10 @@ const searchDatasetsByDataresourceId = async (dataresourceId) => {
 }
 
 module.exports = {
-    search,
-    export2CSV,
-    searchById,
-    getFilters,
-    getAdvancedFilters,
-    searchDatasetsByDataresourceId,
+  search,
+  export2CSV,
+  searchById,
+  getFilters,
+  getAdvancedFilters,
+  searchDatasetsByDataresourceId,
 };
