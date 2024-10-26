@@ -3,7 +3,7 @@ const cache = require('../Components/cache');
 const config = require('../Config');
 const path = require('path');
 const { Parser } = require('json2csv');
-const datasetFields = require('../Utils/datasetFields');
+const { datasetFields } = require('../Utils/datasetFields');
 const datasetService = require('../Services/dataset.service');
 
 const search = async (req, res) => {
@@ -103,7 +103,7 @@ const export2CSV = async (req, res) => {
   options.pageInfo = pageInfo;
   options.sort = sort;
   const searchResult = await datasetService.export2CSV(searchText, filters, options);
-  const json2Csv = new Parser({ csvFields });
+  const json2Csv = new Parser({ fields: csvFields });
   const csv = json2Csv.parse(searchResult);
   res.header('Content-Type', 'text/csv');
   res.attachment('export.csv');

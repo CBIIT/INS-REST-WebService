@@ -5,6 +5,8 @@ const datasetFields = {
   'dbGaP': 'dbGaP_phs',
   'dbGaP URL': 'dbGaP_URL',
   'Principal Investigator(s)': 'PI_name',
+  // Specifically exclude GPA, because we don't display it anywhere
+  // 'Grant Program Administrator': 'GPA',
   'Division/Office/Center': 'dataset_doc',
   'PMID': 'dataset_pmid',
   'Funding Source': 'funding_source',
@@ -21,7 +23,7 @@ const datasetFields = {
   'Related Term(s)': 'related_terms',
 };
 
-module.exports ={
+module.exports = {
   datasetFields,
 };
 
