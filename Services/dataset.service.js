@@ -1,10 +1,10 @@
-const config = require("../Config");
-const elasticsearch = require("../Components/elasticsearch");
-const cache = require("../Components/cache");
-const mysql = require("../Components/mysql");
-const queryGenerator = require("./queryGenerator");
-const cacheKeyGenerator = require("./cacheKeyGenerator");
-const utils = require("../Utils");
+const config = require('../Config');
+const elasticsearch = require('../Components/elasticsearch');
+const cache = require('../Components/cache');
+const mysql = require('../Components/mysql');
+const queryGenerator = require('./queryGenerator');
+const cacheKeyGenerator = require('./cacheKeyGenerator');
+const utils = require('../Utils');
 
 const search = async (searchText, filters, options) => {
   let result = {};
@@ -12,7 +12,7 @@ const search = async (searchText, filters, options) => {
   if (false && searchableText !== "") {
     let aggregationKey = cacheKeyGenerator.getAggregationKey(searchableText);
     let aggregation = cache.getValue(aggregationKey);
-    if(!aggregation){
+    if (!aggregation) {
       let query = queryGenerator.getSearchAggregationQuery(searchText);
       let searchResults = await elasticsearch.searchWithAggregations(config.indexDS, query);
       aggregation = searchResults.aggs.myAgg.buckets;
@@ -20,15 +20,15 @@ const search = async (searchText, filters, options) => {
       cache.setValue(aggregationKey, aggregation, config.itemTTL/288);
     }
     const aggs = aggregation.map((agg) => agg.key);
-    result.aggs = aggs.join("|");
+    result.aggs = aggs.join('|');
   } else {
-    result.aggs = "all";
+    result.aggs = 'all';
   }
   
   let query = queryGenerator.getSearchQueryV2(searchText, filters, options);
   let searchResults = await elasticsearch.searchWithAggregations(config.indexDS, query);
   let datasets = searchResults.hits.hits.map((ds) => {
-    if(ds.inner_hits) {
+    if (ds.inner_hits) {
       const terms = Object.keys(ds.inner_hits);
       const additionalHitsDict = {};
       if (terms.length > 0) {
@@ -39,7 +39,7 @@ const search = async (searchText, filters, options) => {
               additionalHitsDict[hit._nested.offset].source = hit._source;
               additionalHitsDict[hit._nested.offset].highlight = [];
             }
-            additionalHitsDict[hit._nested.offset].highlight = additionalHitsDict[hit._nested.offset].highlight.concat(hit.highlight["additional.attr_set.k"]);
+            additionalHitsDict[hit._nested.offset].highlight = additionalHitsDict[hit._nested.offset].highlight.concat(hit.highlight['additional.attr_set.k']);
           });
         });
       }
@@ -48,7 +48,7 @@ const search = async (searchText, filters, options) => {
         const tmp = {};
         tmp.content = additionalHitsDict[key].source;
         tmp.highlight = {};
-        tmp.highlight["additional.attr_set.k"] = utils.consolidateHighlight(additionalHitsDict[key].highlight);
+        tmp.highlight['additional.attr_set.k'] = utils.consolidateHighlight(additionalHitsDict[key].highlight);
         additionalHits.push(tmp);
       }
       return {content: ds._source, highlight: ds.highlight, additionalHits: additionalHits};
@@ -61,85 +61,17 @@ const search = async (searchText, filters, options) => {
 };
 
 const export2CSV = async (searchText, filters, options) => {
-  let query = queryGenerator.getSearchQueryV2(searchText, filters, options);
-  let searchResults = await elasticsearch.search(config.indexDS, query);
-  let dataElements = [
-    "case_disease_diagnosis", "case_age_at_diagnosis", "case_ethnicity",
-    "case_race", "case_sex", "case_gender", "case_tumor_site",
-    "case_treatment_administered", "case_treatment_outcome",
-    "sample_assay_method", "sample_analyte_type", "sample_anatomic_site",
-    "sample_composition_type", "sample_is_cell_line","sample_is_normal",
-    "sample_is_xenograft"
-  ];
-  let additionalDataElements = [
-    "dbGaP Study Identifier", "GEO Study Identifier",
-    "Clinical Trial Identifier", "SRA Study Identifier", "Data Repository",
-    "Grant ID", "Grant Name", "Grant"
-  ];
-  let datasets = searchResults.hits.map((ds) => {
-    let tmp = ds._source;
-    dataElements.forEach((de) => {
-      if(tmp[de]) {
-        tmp[de] = tmp[de].map((t) => {
-          return t.n + " (" + t.v + ")";
-        });
-      }
-    });
-    additionalDataElements.forEach((ade) => {
-      if (tmp.additional) {
-        tmp.additional.forEach((add) => {
-          if (ade === add.attr_name) {
-            tmp[ade] = add.attr_set.map((t) => {
-              return t.k;
-            });
-          }
-        })
-        if (tmp["Grant"] && tmp["Grant Name"]) {
-          tmp["Grant Name"] = tmp["Grant Name"].concat(tmp["Grant"]);
-        } else if (tmp["Grant"]) {
-          tmp["Grant Name"] = tmp["Grant"];
-        }
-      }
-    });
-    if(tmp.additional) {
-      tmp.additional = tmp.additional.map((t) => {
-        // add the element which is not in the additionalDataElements list
-        if (!additionalDataElements.includes(t.attr_name)) {
-          let sets = [];
-          t.attr_set.forEach((as) => {
-            sets.push(as.k);
-          });
-          return t.attr_name + " (" + sets.join() + ")";
-        }
-      });
-      tmp.additional = tmp.additional.filter(a=>a);
-      //when there is no element in tmp.additional array, return '' instead of []
-      if (tmp.additional.length === 0) {
-        tmp.additional = '';
-      }
-    }
-    if(tmp.projects) {
-      if (!tmp.additional) {
-        tmp.additional = [];
-      }
-      const ps = tmp.projects.map((p) => {
-        let sets = [];
-        p.p_v.forEach((pv) => {
-          sets.push(pv.k + " (" + pv.v + ")");
-        });
-        return p.p_k + ": " + sets.join();
-      });
-      tmp.additional.push("Projects {" + ps.join() + "}");
-    }
-    return ds._source;
-  });
+  const query = queryGenerator.getSearchQueryV2(searchText, filters, options);
+  const searchResults = await elasticsearch.search(config.indexDS, query);
+  const datasets = searchResults.hits.map((dataset) => dataset._source);
+
   return datasets;
 };
 
 const searchById = async (id) => {
   let datasetKey = cacheKeyGenerator.datasetKey(id);
   let dataset = cache.getValue(datasetKey);
-  if(!dataset){
+  if (!dataset) {
     let query = queryGenerator.getDatasetByIdQuery(id);
     let searchResults = await elasticsearch.search(config.indexDS, query);
     let datasets = searchResults.hits.map((ds) => {
@@ -183,26 +115,26 @@ const getFilters = async (searchText, searchFilters) => {
 const getAdvancedFilters = async () => {
   let advancedFiltersKey = cacheKeyGenerator.advancedFiltersKey();
   let advancedFilters = cache.getValue(advancedFiltersKey);
-  if(!advancedFilters){
+  if (!advancedFilters) {
     //querying elasticsearch, save to dataresources cache
     //let sql = "select lt.term_name as name, lvs.permissible_value as value from lu_terms lt, lu_value_set lvs where lt.id = lvs.term_id and lt.term_name in (?,?,?,?,?,?,?,?,?,?,?,?)";
-    let sql = "select data_element, element_value, dataset_count from aggragation where data_element in (?,?,?,?,?,?,?,?,?,?,?,?,?)";
+    let sql = 'select data_element, element_value, dataset_count from aggragation where data_element in (?,?,?,?,?,?,?,?,?,?,?,?,?)';
 
     let inserts = [
-      "Case Disease Diagnosis",
-      "Sample Is Cell Line",
-      "Case Tumor Site",
-      "Case Treatment Administered",
-      "Case Treatment Outcome",
-      "Sample Anatomic Site",
-      "Sample Assay Method",
-      "Sample Analyte Type",
-      "Sample Composition Type",
-      "Sample Is Normal",
-      "Case Age at Diagnosis",
-      "Case Ethnicity",
-      "Case Race",
-      "Case Sex"
+      'Case Disease Diagnosis',
+      'Sample Is Cell Line',
+      'Case Tumor Site',
+      'Case Treatment Administered',
+      'Case Treatment Outcome',
+      'Sample Anatomic Site',
+      'Sample Assay Method',
+      'Sample Analyte Type',
+      'Sample Composition Type',
+      'Sample Is Normal',
+      'Case Age at Diagnosis',
+      'Case Ethnicity',
+      'Case Race',
+      'Case Sex'
     ];
     sql = mysql.format(sql, inserts);
     const result = await mysql.query(sql);
@@ -216,21 +148,21 @@ const getAdvancedFilters = async () => {
         advancedFilters[kv.data_element].push(kv.element_value);
       });
       //add case count
-      advancedFilters["Number of Cases"] = [
-        "0 - 10 Cases",
-        "10 - 100 Cases",
-        "100 - 1000 Cases",
-        "> 1000 Cases",
+      advancedFilters['Number of Cases'] = [
+        '0 - 10 Cases',
+        '10 - 100 Cases',
+        '100 - 1000 Cases',
+        '> 1000 Cases',
       ];
       //add sample count
-      advancedFilters["Number of Samples"] = [
-        "0 - 10 Samples",
-        "10 - 100 Samples",
-        "100 - 1000 Samples",
-        "> 1000 Samples",
+      advancedFilters['Number of Samples'] = [
+        '0 - 10 Samples',
+        '10 - 100 Samples',
+        '100 - 1000 Samples',
+        '> 1000 Samples',
       ];
       //sort and top n
-      for(let k in advancedFilters){
+      for (let k in advancedFilters) {
         const tmp = advancedFilters[k];
         tmp.sort();
         //advancedFilters[k] = tmp.length > config.limitAdvancedFilterCount ? tmp.slice(0, config.limitAdvancedFilterCount) : tmp;
@@ -253,10 +185,10 @@ const searchDatasetsByDataresourceId = async (dataresourceId) => {
 }
 
 module.exports = {
-    search,
-    export2CSV,
-    searchById,
-    getFilters,
-    getAdvancedFilters,
-    searchDatasetsByDataresourceId,
+  search,
+  export2CSV,
+  searchById,
+  getFilters,
+  getAdvancedFilters,
+  searchDatasetsByDataresourceId,
 };
