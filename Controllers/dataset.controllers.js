@@ -43,7 +43,11 @@ const search = async (req, res) => {
 
   options.pageInfo = pageInfo;
   options.sort = sort;
+  data.sort = sort;
+  data.pageInfo = options.pageInfo;
+
   const searchResult = await datasetService.search(searchText, filters, options);
+
   if (searchResult.total !== 0 && (options.pageInfo.page - 1) * options.pageInfo.pageSize >= searchResult.total) {
     let lastPage = Math.ceil(searchResult.total / options.pageInfo.pageSize);
     options.pageInfo.page = lastPage;
@@ -57,8 +61,6 @@ const search = async (req, res) => {
     data.aggs = searchResult.aggs;
   }
 
-  data.sort = sort;
-  data.pageInfo = options.pageInfo;
   res.json({status:"success", data: data});
 };
 
