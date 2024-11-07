@@ -47,34 +47,6 @@ queryGenerator.getSearchAggregationQuery = (searchText) => {
         ];
         // clause.bool.should.push(dsl);
         let nestedFields = [
-        // "case_age.k",
-        //   "case_age_at_diagnosis.k",
-        //   "case_age_at_trial.k",
-        //   "case_disease_diagnosis.k",
-        //   "case_disease_diagnosis.s",
-        //   "case_ethnicity.k",
-        //   "case_gender.k",
-        //   "case_proband.k",
-        //   "case_race.k",
-        //   "case_sex.k",
-        //   "case_sex_at_birth.k",
-        //   "case_treatment_administered.k",
-        //   "case_treatment_outcome.k",
-        //   "case_tumor_site.k",
-        //   "case_tumor_site.s",
-        //   "donor_age.k",
-        //   "donor_disease_diagnosis.k",
-        //   "donor_sex.k",
-        //   "project_anatomic_site.k",
-        //   "project_cancer_studied.k",
-        //   "sample_analyte_type.k",
-        //   "sample_anatomic_site.k",
-        //   "sample_assay_method.k",
-        //   "sample_composition_type.k",
-        //   "sample_repository_name.k",
-        //   "sample_is_cell_line.k",
-        //   "sample_is_normal.k",
-        //   "sample_is_xenograft.k"
         ];
         nestedFields.map((f) => {
           let idx = f.indexOf('.');
@@ -173,12 +145,13 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options) => {
     const uniqueTermArr = termArr.filter((t, idx) => {
       return termArr.indexOf(t) === idx;
     });
+    let clause = {};
+        clause.bool = {};
+        clause.bool.should = [];
     uniqueTermArr.forEach((term) => {
       let searchTerm = term.trim();
       if(searchTerm != ""){
-        let clause = {};
-        clause.bool = {};
-        clause.bool.should = [];
+        
         let dsl = {};
         dsl.multi_match = {};
         dsl.multi_match.query = searchTerm;
@@ -207,34 +180,6 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options) => {
         ].map((field) => `${field}.search`);
         clause.bool.should.push(dsl);
         let nestedFields = [
-        // "case_age.k",
-        //   "case_age_at_diagnosis.k",
-        //   "case_age_at_trial.k",
-        //   "case_disease_diagnosis.k",
-        //   "case_disease_diagnosis.s",
-        //   "case_ethnicity.k",
-        //   "case_gender.k",
-        //   "case_proband.k",
-        //   "case_race.k",
-        //   "case_sex.k",
-        //   "case_sex_at_birth.k",
-        //   "case_treatment_administered.k",
-        //   "case_treatment_outcome.k",
-        //   "case_tumor_site.k",
-        //   "case_tumor_site.s",
-        //   "donor_age.k",
-        //   "donor_disease_diagnosis.k",
-        //   "donor_sex.k",
-        //   "project_anatomic_site.k",
-        //   "project_cancer_studied.k",
-        //   "sample_analyte_type.k",
-        //   "sample_anatomic_site.k",
-        //   "sample_assay_method.k",
-        //   "sample_composition_type.k",
-        //   "sample_repository_name.k",
-        //   "sample_is_cell_line.k",
-        //   "sample_is_normal.k",
-        //   "sample_is_xenograft.k"
         ];
         nestedFields.map((f) => {
           let idx = f.indexOf('.');
@@ -247,28 +192,7 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options) => {
           dsl.nested.query.match[f] = {"query":searchTerm};
           // clause.bool.should.push(dsl);
         });
-        // let m = {};
-        // dsl = {};
-        // dsl.nested = {};
-        // dsl.nested.path = "projects";
-        // dsl.nested.query = {};
-        // dsl.nested.query.bool = {};
-        // dsl.nested.query.bool.should = [];
-        // m.match = {
-        //   "projects.p_k": searchTerm
-        // };
-        // dsl.nested.query.bool.should.push(m);
-        /*
-        m = {};
-        m.nested = {};
-        m.nested.path = "projects.p_v";
-        m.nested.query = {};
-        m.nested.query.match = {};
-        m.nested.query.match["projects.p_v.k"] = {"query":searchTerm};
-        dsl.nested.query.bool.should.push(m);
-        */
-        // clause.bool.should.push(dsl);
-    
+       
         dsl = {};
         dsl.nested = {};
         dsl.nested.path = "additional";
@@ -284,26 +208,9 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options) => {
         dsl.nested.query = {};
         dsl.nested.query.bool = {};
         dsl.nested.query.bool.should = [];
-        /*
-        m = {};
-        m.match = {
-          "additional.attr_name": searchTerm
-        };
-        dsl.nested.query.bool.should.push(m);
-        */
-        /*
-        m = {};
-        m.nested = {};
-        m.nested.path = "additional.attr_set";
-        m.nested.query = {};
-        m.nested.query.match = {};
-        m.nested.query.match["additional.attr_set.k"] = {"query":searchTerm};
-        dsl.nested.query.bool.should.push(m);
-        clause.bool.should.push(dsl);
-        */
-        compoundQuery.bool.must.push(clause);
       }
     });
+     compoundQuery.bool.must.push(clause);
     
   }
 
