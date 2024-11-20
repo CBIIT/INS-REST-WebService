@@ -8,6 +8,7 @@ const utils = require('../Utils');
 
 const search = async (searchText, filters, options) => {
   let result = {};
+  searchText = searchText.replace(/[^a-zA-Z0-9]+/g, ' '); // Ignore special characters
   let searchableText = utils.getSearchableText(searchText);
   if (false && searchableText !== "") {
     let aggregationKey = cacheKeyGenerator.getAggregationKey(searchableText);
