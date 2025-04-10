@@ -133,91 +133,98 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options) => {
 
   const strArr = searchText.trim().split(" ");
   const result = [];
-  strArr.forEach((term) => {
-    const t = term.trim();
-    if (t.length > 2) {
-      result.push(t);
-    }
-  });
+  result.push(...strArr.map(
+    term => term.trim()
+  ).filter(
+    term => term.length > 2
+  ));
   const keywords = result.length === 0 ? "" : result.join(" ");
   if(keywords != ""){
     const termArr = keywords.split(" ").map((t) => t.trim());
     const uniqueTermArr = termArr.filter((t, idx) => {
       return termArr.indexOf(t) === idx;
     });
-    let clause = {};
-        clause.bool = {};
-        clause.bool.should = [];
-    uniqueTermArr.forEach((term) => {
-      let searchTerm = term.trim();
-      if(searchTerm != ""){
-        
-        let dsl = {};
-        dsl.multi_match = {};
-        dsl.multi_match.query = searchTerm;
-        //dsl.multi_match.analyzer = "standard_analyzer";
-        dsl.multi_match.fields = [
-          'dataset_title',
-          'description',
-          'dbGaP_phs',
-          'dbGaP_URL',
-          'PI_name',
-          'GPA',
-          'dataset_doc',
-          'dataset_pmid',
-          'funding_source',
-          // 'release_date',
-          'limitations_for_reuse',
-          'assay_method',
-          'study_type',
-          'primary_disease',
-          // 'participant_count',
-          // 'sample_count',
-          'study_links',
-          'related_genes',
-          'related_diseases',
-          'related_terms',
-        ].map((field) => `${field}.search`);
-        clause.bool.should.push(dsl);
-        let nestedFields = [
-        ];
-        nestedFields.map((f) => {
-          let idx = f.indexOf('.');
-          let parent = f.substring(0, idx);
-          let dsl = {};
-          dsl.nested = {};
-          dsl.nested.path = parent;
-          dsl.nested.query = {};
-          dsl.nested.query.match = {};
-          dsl.nested.query.match[f] = {"query":searchTerm};
-          // clause.bool.should.push(dsl);
-        });
-       
-        dsl = {};
-        dsl.nested = {};
-        dsl.nested.path = "additional";
-        dsl.nested.inner_hits = {};
-        dsl.nested.inner_hits.name = searchTerm;
-        dsl.nested.inner_hits.highlight = {
-          pre_tags: ["<b>"],
-          post_tags: ["</b>"],
-          fields: {
-            "additional.attr_set.k": {}
-          }
-        };
-        dsl.nested.query = {};
-        dsl.nested.query.bool = {};
-        dsl.nested.query.bool.should = [];
+    let clause = {
+      'bool': {
+        'should': []
       }
+    };
+    uniqueTermArr.filter((term) => term.trim() != '').forEach((term) => {
+      let dsl = {};
+      let searchTerm = term.trim();
+
+      dsl.multi_match = {
+        'query': searchTerm,
+      };
+      //dsl.multi_match.analyzer = "standard_analyzer";
+      dsl.multi_match.fields = [
+        'dataset_uuid',
+        'dataset_title',
+        'description',
+        'dataset_source_id',
+        'dataset_source_repo',
+        'dataset_source_url',
+        'PI_name',
+        'GPA',
+        'dataset_doc',
+        'dataset_pmid',
+        'funding_source',
+        // 'release_date',
+        'limitations_for_reuse',
+        'assay_method',
+        'study_type',
+        'primary_disease',
+        // 'participant_count',
+        // 'sample_count',
+        'study_links',
+        'related_genes',
+        'related_diseases',
+        'related_terms',
+      ].map((field) => `${field}.search`);
+      clause.bool.should.push(dsl);
+      let nestedFields = [
+      ];
+      nestedFields.map((f) => {
+        let idx = f.indexOf('.');
+        let parent = f.substring(0, idx);
+        let dsl = {};
+        dsl.nested = {};
+        dsl.nested.path = parent;
+        dsl.nested.query = {};
+        dsl.nested.query.match = {};
+        dsl.nested.query.match[f] = {"query":searchTerm};
+        // clause.bool.should.push(dsl);
+      });
+
+      dsl = {
+        'nested': {
+          'inner_hits': {
+            'name': searchTerm,
+            'highlight': {
+              'pre_tags': ['<b>'],
+              'post_tags': ['</b>'],
+              'fields': {
+                'additional.attr_set.k': {}
+              }
+            }
+          },
+          'path': 'additional',
+          'query': {
+            'bool': {
+              'should': []
+            }
+          }
+        },
+      };
     });
-     compoundQuery.bool.must.push(clause);
-    
+
+    compoundQuery.bool.must.push(clause);
   }
 
   if (Object.entries(filters).length > 0) {
     const clause = {
       'bool': {
-        'should': Object.entries(filters).map(([field, values]) => {
+        'must': Object.entries(filters).map(([field, values]) => {
           return {
             'terms': {
               [field]: values
@@ -252,10 +259,12 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options) => {
     pre_tags: ["<b>"],
     post_tags: ["</b>"],
     fields: {
+      'dataset_uuid': { number_of_fragments: 0 },
       'dataset_title': { number_of_fragments: 0 },
       'description': { number_of_fragments: 0 },
-      'dbGaP_phs': { number_of_fragments: 0 },
-      'dbGaP_URL': { number_of_fragments: 0 },
+      'dataset_source_id': { number_of_fragments: 0 },
+      'dataset_source_repo': { number_of_fragments: 0 },
+      'dataset_source_url': { number_of_fragments: 0 },
       'PI_name': { number_of_fragments: 0 },
       'GPA': { number_of_fragments: 0 },
       'dataset_doc': { number_of_fragments: 0 },
