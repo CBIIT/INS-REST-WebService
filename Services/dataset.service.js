@@ -6,6 +6,11 @@ const queryGenerator = require('./queryGenerator');
 const cacheKeyGenerator = require('./cacheKeyGenerator');
 const utils = require('../Utils');
 
+const FACET_FILTERS = [
+  'dataset_source_repo',
+  'primary_disease',
+]
+
 const search = async (searchText, filters, options) => {
   let result = {};
   searchText = searchText.replace(/[^a-zA-Z0-9]+/g, ' '); // Ignore special characters
@@ -90,7 +95,7 @@ const searchById = async (id) => {
  * @returns {Map<string, Map<string, string>[]>} Map of filters with a list of their values and counts
  */
 const getFilters = async (searchText, searchFilters) => {
-  const filtersKey = cacheKeyGenerator.datasetsFilterKey(searchText, searchFilters);
+  const filtersKey = await cacheKeyGenerator.datasetsFilterKey(searchText, searchFilters);
   let filters = cache.getValue(filtersKey);
 
   // Return result if already cached
@@ -98,16 +103,21 @@ const getFilters = async (searchText, searchFilters) => {
     return filters;
   }
 
-  // Query Opensearch and cache results
-  const query = queryGenerator.getDatasetFiltersQuery(searchText, searchFilters);
-  const filtersResponse = await elasticsearch.searchWithAggregations(config.indexDS, query);
   filters = {};
-  Object.entries(filtersResponse.aggs).forEach(([fieldName, results]) => {
-    filters[fieldName] = results.buckets.map((bucket) => ({
+
+  // Must obtain counts for each filter as if the filter were not applied
+  await Promise.all(FACET_FILTERS.map(async (filterName) => {
+    // Obtain counts from Opensearch
+    const query = queryGenerator.getDatasetFiltersQuery(searchText, searchFilters, filterName);
+    const filtersResponse = await elasticsearch.searchWithAggregations(config.indexDS, query);
+
+    // Extract counts from response
+    filters[filterName] = filtersResponse.aggs[filterName].buckets.map((bucket) => ({
       'name': bucket.key,
       'count': bucket.doc_count
     }));
-  });
+  }));
+
   cache.setValue(filtersKey, filters, config.itemTTL);
 
   return filters;

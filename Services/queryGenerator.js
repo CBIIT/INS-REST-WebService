@@ -1,4 +1,30 @@
+const { query } = require("winston");
 const config = require("../Config");
+const { values } = require("lodash");
+const DATASET_FIELDS = [
+  'dataset_uuid',
+  'dataset_title',
+  'description',
+  'dataset_source_id',
+  'dataset_source_repo',
+  'dataset_source_url',
+  'PI_name',
+  'GPA',
+  'dataset_doc',
+  'dataset_pmid',
+  'funding_source',
+  // 'release_date',
+  'limitations_for_reuse',
+  'assay_method',
+  'study_type',
+  'primary_disease',
+  // 'participant_count',
+  // 'sample_count',
+  'study_links',
+  'related_genes',
+  'related_diseases',
+  'related_terms',
+];
 
 let queryGenerator = {};
 
@@ -119,127 +145,94 @@ queryGenerator.getSearchAggregationQuery = (searchText) => {
   return body;
 };
 
+queryGenerator.getFiltersClause = (filters) => {
+  // Ignore filters with no values selected
+  const cleanedFilters = Object.fromEntries(
+    Object.entries(filters).filter(([field, values]) => values.length > 0)
+  );
+
+  // If no filters, then return null
+  if (Object.entries(cleanedFilters).length <= 0) {
+    return null;
+  }
+
+  const clause = {
+    'bool': {
+      'must': Object.entries(cleanedFilters).map(([field, values]) => ({
+        'terms': {
+          [field]: values
+        }
+      }))
+    }
+  };
+
+  return clause;
+}
+
+queryGenerator.getTextSearchClause = (searchText) => {
+  const clause = {
+    'bool': {
+      'should': []
+    }
+  };
+  const strArr = searchText.trim().split(' ');
+  const result = strArr.map(
+    term => term.trim()
+  ).filter(
+    term => term.length > 2
+  );
+  const keywords = result.length === 0 ? '' : result.join(' ');
+
+  // No search terms, so return null
+  if (keywords == '') {
+    return null;
+  }
+
+  const termArr = keywords.split(' ').map((t) => t.trim());
+  const uniqueTermArr = termArr.filter((t, idx) => {
+    return termArr.indexOf(t) === idx;
+  });
+  uniqueTermArr.filter((term) => term.trim() != '').forEach((term) => {
+    let dsl = {};
+    let searchTerm = term.trim();
+
+    dsl.multi_match = {
+      'query': searchTerm,
+      'fields': DATASET_FIELDS.map((field) => `${field}.search`),
+    };
+    clause.bool.should.push(dsl);
+  });
+
+  return clause;
+};
+
 queryGenerator.getSearchQueryV2 = (searchText, filters, options) => {
   const body = {};
+  const compoundQuery = {
+    'bool': {
+      'must': [],
+    },
+  };
+  const filtersClause = queryGenerator.getFiltersClause(filters);
+  const textSearchClause = queryGenerator.getTextSearchClause(searchText);
 
   if (options) {
     body.size = options.pageInfo.pageSize;
     body.from = (options.pageInfo.page - 1 ) * options.pageInfo.pageSize;
   }
 
-  let compoundQuery = {};
-  compoundQuery.bool = {};
-  compoundQuery.bool.must = [];
-
-  const strArr = searchText.trim().split(" ");
-  const result = [];
-  result.push(...strArr.map(
-    term => term.trim()
-  ).filter(
-    term => term.length > 2
-  ));
-  const keywords = result.length === 0 ? "" : result.join(" ");
-  if(keywords != ""){
-    const termArr = keywords.split(" ").map((t) => t.trim());
-    const uniqueTermArr = termArr.filter((t, idx) => {
-      return termArr.indexOf(t) === idx;
-    });
-    let clause = {
-      'bool': {
-        'should': []
-      }
-    };
-    uniqueTermArr.filter((term) => term.trim() != '').forEach((term) => {
-      let dsl = {};
-      let searchTerm = term.trim();
-
-      dsl.multi_match = {
-        'query': searchTerm,
-      };
-      //dsl.multi_match.analyzer = "standard_analyzer";
-      dsl.multi_match.fields = [
-        'dataset_uuid',
-        'dataset_title',
-        'description',
-        'dataset_source_id',
-        'dataset_source_repo',
-        'dataset_source_url',
-        'PI_name',
-        'GPA',
-        'dataset_doc',
-        'dataset_pmid',
-        'funding_source',
-        // 'release_date',
-        'limitations_for_reuse',
-        'assay_method',
-        'study_type',
-        'primary_disease',
-        // 'participant_count',
-        // 'sample_count',
-        'study_links',
-        'related_genes',
-        'related_diseases',
-        'related_terms',
-      ].map((field) => `${field}.search`);
-      clause.bool.should.push(dsl);
-      let nestedFields = [
-      ];
-      nestedFields.map((f) => {
-        let idx = f.indexOf('.');
-        let parent = f.substring(0, idx);
-        let dsl = {};
-        dsl.nested = {};
-        dsl.nested.path = parent;
-        dsl.nested.query = {};
-        dsl.nested.query.match = {};
-        dsl.nested.query.match[f] = {"query":searchTerm};
-        // clause.bool.should.push(dsl);
-      });
-
-      dsl = {
-        'nested': {
-          'inner_hits': {
-            'name': searchTerm,
-            'highlight': {
-              'pre_tags': ['<b>'],
-              'post_tags': ['</b>'],
-              'fields': {
-                'additional.attr_set.k': {}
-              }
-            }
-          },
-          'path': 'additional',
-          'query': {
-            'bool': {
-              'should': []
-            }
-          }
-        },
-      };
-    });
-
-    compoundQuery.bool.must.push(clause);
+  if (filtersClause != null) {
+    compoundQuery.bool.must.push(filtersClause);
   }
 
-  if (Object.entries(filters).length > 0) {
-    const clause = {
-      'bool': {
-        'must': Object.entries(filters).map(([field, values]) => {
-          return {
-            'terms': {
-              [field]: values
-            }
-          }
-        })
-      }
-    };
-    compoundQuery.bool.must.push(clause);
+  if (textSearchClause != null) {
+    compoundQuery.bool.must.push(textSearchClause);
   }
 
   if (compoundQuery.bool.must.length > 0) {
     body.query = compoundQuery;
   }
-  
+
   let agg = {};
   agg.myAgg = {};
   agg.myAgg.terms = {};
@@ -286,34 +279,57 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options) => {
   return body;
 };
 
-// Generates a bucket aggregation query on dataset properties
-queryGenerator.getDatasetFiltersQuery = (searchText, searchFilters) => {
+/**
+ * Generates a bucket aggregation query on dataset properties
+ * @param {String} searchText The text to search for
+ * @param {Object} searchFilters The filters to apply
+ * @param {String} excludedField The field to exclude from the filters
+ * @returns {Object} Opensearch query to retrieve filter counts
+ */
+queryGenerator.getDatasetFiltersQuery = (searchText, searchFilters, excludedField) => {
   // Borrow some of the search query
-  const query = queryGenerator.getSearchQueryV2(searchText, searchFilters);
+  const body = {};
+  const compoundQuery = {
+    'bool': {
+      'must': [],
+    },
+  };
+  const filtersClause = queryGenerator.getFiltersClause(Object.fromEntries(
+    Object.entries(searchFilters).filter( // Remove excluded field from filters
+      ([filterName]) => filterName != excludedField
+    )
+  ));
+  const textSearchClause = queryGenerator.getTextSearchClause(searchText);
+
+  if (filtersClause != null) {
+    compoundQuery.bool.must.push(filtersClause);
+  }
+
+  if (textSearchClause != null) {
+    compoundQuery.bool.must.push(textSearchClause);
+  }
+
+  if (compoundQuery.bool.must.length > 0) {
+    body.query = compoundQuery;
+  }
 
   // Customize search query
-  query.aggs = {};
-  query.size = 0;
+  body.aggs = {};
+  body.size = 0;
   delete query.highlight;
 
-  const BUCKET_FIELDS = [
-    'primary_disease',
-  ];
-
-  // Aggregate on filter fields
-  BUCKET_FIELDS.forEach((fieldName) => {
-    query.aggs[fieldName] = {
-      'terms': {
-        'field': fieldName,
-        'order': {
-          '_key': 'asc'
-        },
-        'size': 100000
-      }
+  // Aggregate on the target field
+  body.aggs[excludedField] = {
+    'terms': {
+      'field': excludedField,
+      'order': {
+        '_key': 'asc'
+      },
+      'size': 100000
     }
-  });
+  };
 
-  return query;
+  return body;
 };
 
 queryGenerator.getParticipatingResourcesSearchQuery = (filters, options) => {
