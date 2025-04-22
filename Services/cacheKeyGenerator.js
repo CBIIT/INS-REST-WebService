@@ -1,11 +1,24 @@
+const { hasher } = require('node-object-hash');
 let cacheKeyGenerator = {};
+
+/**
+ * Hashes a obj
+ * @param {Object} obj The obj to hash
+ */
+const hash = async (obj) => {
+  const hashSortCoerce = hasher({ sort: true, coerce: true });
+
+  return hashSortCoerce.hash(obj);
+}
 
 cacheKeyGenerator.landingKey = () => {
   return "dr_landing";
 };
 
-cacheKeyGenerator.datasetsFilterKey = () => {
-  return "ds_filters";
+cacheKeyGenerator.datasetsFilterKey = async (searchText, searchFilters) => {
+  const filtersHash = await hash(searchFilters);
+  const textHash = await hash(searchText);
+  return `ds_filters_${textHash}_${filtersHash}`;
 };
 
 cacheKeyGenerator.datasetsCountKey = () => {
@@ -13,7 +26,7 @@ cacheKeyGenerator.datasetsCountKey = () => {
 };
 
 cacheKeyGenerator.filtersKey = (searchText, searchFilters) => {
-  return `ds_filters_${searchText}_${searchFilters}`;
+  return `ds_filters`;
 };
 
 cacheKeyGenerator.participatingResourcesFiltersKey = () => {
