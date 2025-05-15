@@ -1,4 +1,4 @@
-FROM node:20.15.1-slim
+FROM node:22-alpine3.20 AS fnl_base_image
 
 ENV PORT 8081
 ENV NODE_ENV production
