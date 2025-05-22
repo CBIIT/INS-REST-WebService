@@ -110,7 +110,7 @@ var config = {
   },
 
     elasticsearch: {
-    host: process.env.ES_PROTOCOL || "https" + "://" + (process.env.ES_HOST || "127.0.0.1:9200"),
+    host: (process.env.ES_PROTOCOL || "https") + "://" + (process.env.ES_HOST || "127.0.0.1:9200"),
     requestTimeout: 30000
   },
 
