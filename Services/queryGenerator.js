@@ -2,14 +2,18 @@ const { query } = require("winston");
 const config = require("../Config");
 const { values } = require("lodash");
 const DATASET_FIELDS = [
-  'dataset_uuid',
+  // 'dataset_uuid',
   'dataset_title',
   'description',
+  // 'dataset_maximum_age_at_baseline',
+  // 'dataset_minimum_age_at_baseline',
   'dataset_source_id',
   'dataset_source_repo',
   'dataset_source_url',
+  // 'dataset_year_enrollment_ended',
+  // 'dataset_year_enrollment_started',
   'PI_name',
-  'GPA',
+  // 'GPA',
   'dataset_doc',
   'dataset_pmid',
   'funding_source',
@@ -156,15 +160,11 @@ queryGenerator.getFiltersClause = (filters) => {
     return null;
   }
 
-  const clause = {
-    'bool': {
-      'must': Object.entries(cleanedFilters).map(([field, values]) => ({
-        'terms': {
-          [field]: values
-        }
-      }))
+  const clause = Object.entries(cleanedFilters).map(([field, values]) => ({
+    'terms': {
+      [field]: values
     }
-  };
+  }));
 
   return clause;
 }
@@ -206,7 +206,7 @@ queryGenerator.getTextSearchClause = (searchText) => {
   return clause;
 };
 
-queryGenerator.getSearchQueryV2 = (searchText, filters, options) => {
+queryGenerator.getSearchQueryV2 = (searchText, filters, options, returnFields) => {
   const body = {};
   const compoundQuery = {
     'bool': {
@@ -216,13 +216,15 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options) => {
   const filtersClause = queryGenerator.getFiltersClause(filters);
   const textSearchClause = queryGenerator.getTextSearchClause(searchText);
 
+  body['_source'] = returnFields;
+
   if (options) {
     body.size = options.pageInfo.pageSize;
     body.from = (options.pageInfo.page - 1 ) * options.pageInfo.pageSize;
   }
 
   if (filtersClause != null) {
-    compoundQuery.bool.must.push(filtersClause);
+    compoundQuery.bool['filter'] = filtersClause;
   }
 
   if (textSearchClause != null) {
@@ -252,28 +254,32 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options) => {
     pre_tags: ["<b>"],
     post_tags: ["</b>"],
     fields: {
-      'dataset_uuid': { number_of_fragments: 0 },
-      'dataset_title': { number_of_fragments: 0 },
-      'description': { number_of_fragments: 0 },
-      'dataset_source_id': { number_of_fragments: 0 },
-      'dataset_source_repo': { number_of_fragments: 0 },
-      'dataset_source_url': { number_of_fragments: 0 },
-      'PI_name': { number_of_fragments: 0 },
-      'GPA': { number_of_fragments: 0 },
-      'dataset_doc': { number_of_fragments: 0 },
-      'dataset_pmid': { number_of_fragments: 0 },
-      'funding_source': { number_of_fragments: 0 },
+      // 'dataset_uuid': { number_of_fragments: 0 },
+      'dataset_title.search': { number_of_fragments: 0 },
+      'description.search': { number_of_fragments: 0 },
+      'dataset_maximum_age_at_baseline.search': { number_of_fragments: 0 },
+      'dataset_minimum_age_at_baseline.search': { number_of_fragments: 0 },
+      'dataset_source_id.search': { number_of_fragments: 0 },
+      'dataset_source_repo.search': { number_of_fragments: 0 },
+      'dataset_source_url.search': { number_of_fragments: 0 },
+      'dataset_year_enrollment_ended.search': { number_of_fragments: 0 },
+      'dataset_year_enrollment_started.search': { number_of_fragments: 0 },
+      'PI_name.search': { number_of_fragments: 0 },
+      // 'GPA': { number_of_fragments: 0 },
+      'dataset_doc.search': { number_of_fragments: 0 },
+      'dataset_pmid.search': { number_of_fragments: 0 },
+      'funding_source.search': { number_of_fragments: 0 },
       // 'release_date': { number_of_fragments: 0 },
-      'limitations_for_reuse': { number_of_fragments: 0 },
-      'assay_method': { number_of_fragments: 0 },
-      'study_type': { number_of_fragments: 0 },
-      'primary_disease': { number_of_fragments: 0 },
+      'limitations_for_reuse.search': { number_of_fragments: 0 },
+      'assay_method.search': { number_of_fragments: 0 },
+      'study_type.search': { number_of_fragments: 0 },
+      'primary_disease.search': { number_of_fragments: 0 },
       // 'participant_count': { number_of_fragments: 0 },
       // 'sample_count': { number_of_fragments: 0 },
-      'study_links': { number_of_fragments: 0 },
-      'related_genes': { number_of_fragments: 0 },
-      'related_diseases': { number_of_fragments: 0 },
-      'related_terms': { number_of_fragments: 0 },
+      'study_links.search': { number_of_fragments: 0 },
+      'related_genes.search': { number_of_fragments: 0 },
+      'related_diseases.search': { number_of_fragments: 0 },
+      'related_terms.search': { number_of_fragments: 0 },
     },
   };
   return body;
@@ -302,7 +308,7 @@ queryGenerator.getDatasetFiltersQuery = (searchText, searchFilters, excludedFiel
   const textSearchClause = queryGenerator.getTextSearchClause(searchText);
 
   if (filtersClause != null) {
-    compoundQuery.bool.must.push(filtersClause);
+    compoundQuery.bool['filter'] = filtersClause;
   }
 
   if (textSearchClause != null) {

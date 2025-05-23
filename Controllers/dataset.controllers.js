@@ -74,7 +74,7 @@ const export2CSV = async (req, res) => {
   const options = {};
   const pageInfo = {page: 1, pageSize: 5000};
   const searchText = body.search_text?.trim() ?? '';
-  const sort = body.sort ?? {k: 'dbGaP_phs', v: 'asc'};
+  const sort = body.sort ?? {k: 'dataset_title', v: 'asc'};
 
   if (pageInfo.page !== parseInt(pageInfo.page, 10) || pageInfo.page <= 0) {
     pageInfo.page = 1;
