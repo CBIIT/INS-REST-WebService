@@ -2,14 +2,18 @@ const { query } = require("winston");
 const config = require("../Config");
 const { values } = require("lodash");
 const DATASET_FIELDS = [
-  'dataset_uuid',
+  // 'dataset_uuid',
   'dataset_title',
   'description',
+  // 'dataset_maximum_age_at_baseline',
+  // 'dataset_minimum_age_at_baseline',
   'dataset_source_id',
   'dataset_source_repo',
   'dataset_source_url',
+  // 'dataset_year_enrollment_ended',
+  // 'dataset_year_enrollment_started',
   'PI_name',
-  'GPA',
+  // 'GPA',
   'dataset_doc',
   'dataset_pmid',
   'funding_source',
