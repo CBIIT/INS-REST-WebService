@@ -308,7 +308,7 @@ queryGenerator.getDatasetFiltersQuery = (searchText, searchFilters, excludedFiel
   const textSearchClause = queryGenerator.getTextSearchClause(searchText);
 
   if (filtersClause != null) {
-    compoundQuery.bool.must.push(filtersClause);
+    compoundQuery.bool['filter'] = filtersClause;
   }
 
   if (textSearchClause != null) {
