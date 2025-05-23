@@ -32,7 +32,6 @@ const search = async (searchText, filters, options) => {
   }
   
   const returnFields = [
-    'dataset_title',
     // 'dataset_uuid',
     'dataset_source_repo',
     'dataset_title',
@@ -97,7 +96,6 @@ const search = async (searchText, filters, options) => {
 
 const export2CSV = async (searchText, filters, options) => {
   const returnFields = [
-    'dataset_title',
     'dataset_uuid',
     'dataset_source_repo',
     'dataset_title',
