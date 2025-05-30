@@ -224,7 +224,8 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options, returnFields) =
   }
 
   if (filtersClause != null) {
-    compoundQuery.bool['filter'] = filtersClause;
+    compoundQuery.bool.must.push(filtersClause);
+    // compoundQuery.bool['filter'] = filtersClause;
   }
 
   if (textSearchClause != null) {
