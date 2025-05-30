@@ -72,7 +72,7 @@ const export2CSV = async (req, res) => {
   }));
   const filters = body.filters ?? {};
   const options = {};
-  const pageInfo = {page: 1, pageSize: 100000};
+  const pageInfo = {page: 1, pageSize: 10000};
   const searchText = body.search_text?.trim() ?? '';
   const sort = body.sort ?? {k: 'dataset_title', v: 'asc'};
 
@@ -80,7 +80,7 @@ const export2CSV = async (req, res) => {
     pageInfo.page = 1;
   }
   if (pageInfo.pageSize !== parseInt(pageInfo.pageSize, 10) || pageInfo.pageSize <= 0) {
-    pageInfo.pageSize = 100000;
+    pageInfo.pageSize = 10000;
   }
   // if(sort.k === "primary_dataset_scope") {
   //   sort.name = "Primary Dataset Scope";
