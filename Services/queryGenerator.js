@@ -1,4 +1,34 @@
+const { query } = require("winston");
 const config = require("../Config");
+const { values } = require("lodash");
+const DATASET_FIELDS = [
+  // 'dataset_uuid',
+  'dataset_title',
+  'description',
+  // 'dataset_maximum_age_at_baseline',
+  // 'dataset_minimum_age_at_baseline',
+  'dataset_source_id',
+  'dataset_source_repo',
+  'dataset_source_url',
+  // 'dataset_year_enrollment_ended',
+  // 'dataset_year_enrollment_started',
+  'PI_name',
+  // 'GPA',
+  'dataset_doc',
+  'dataset_pmid',
+  'funding_source',
+  // 'release_date',
+  'limitations_for_reuse',
+  'assay_method',
+  'study_type',
+  'primary_disease',
+  // 'participant_count',
+  // 'sample_count',
+  'study_links',
+  'related_genes',
+  'related_diseases',
+  'related_terms',
+];
 
 let queryGenerator = {};
 
@@ -47,34 +77,6 @@ queryGenerator.getSearchAggregationQuery = (searchText) => {
         ];
         // clause.bool.should.push(dsl);
         let nestedFields = [
-        // "case_age.k",
-        //   "case_age_at_diagnosis.k",
-        //   "case_age_at_trial.k",
-        //   "case_disease_diagnosis.k",
-        //   "case_disease_diagnosis.s",
-        //   "case_ethnicity.k",
-        //   "case_gender.k",
-        //   "case_proband.k",
-        //   "case_race.k",
-        //   "case_sex.k",
-        //   "case_sex_at_birth.k",
-        //   "case_treatment_administered.k",
-        //   "case_treatment_outcome.k",
-        //   "case_tumor_site.k",
-        //   "case_tumor_site.s",
-        //   "donor_age.k",
-        //   "donor_disease_diagnosis.k",
-        //   "donor_sex.k",
-        //   "project_anatomic_site.k",
-        //   "project_cancer_studied.k",
-        //   "sample_analyte_type.k",
-        //   "sample_anatomic_site.k",
-        //   "sample_assay_method.k",
-        //   "sample_composition_type.k",
-        //   "sample_repository_name.k",
-        //   "sample_is_cell_line.k",
-        //   "sample_is_normal.k",
-        //   "sample_is_xenograft.k"
         ];
         nestedFields.map((f) => {
           let idx = f.indexOf('.');
@@ -140,205 +142,103 @@ queryGenerator.getSearchAggregationQuery = (searchText) => {
   let agg = {};
   agg.myAgg = {};
   agg.myAgg.terms = {};
-  agg.myAgg.terms.field = "data_resource_id";
+  agg.myAgg.terms.field = "dbGaP_phs";
   agg.myAgg.terms.size = 1000;
 
   // body.aggs = agg;
   return body;
 };
 
-queryGenerator.getSearchQueryV2 = (searchText, filters, options) => {
+queryGenerator.getFiltersClause = (filters) => {
+  // Ignore filters with no values selected
+  const cleanedFilters = Object.fromEntries(
+    Object.entries(filters).filter(([field, values]) => values.length > 0)
+  );
+
+  // If no filters, then return null
+  if (Object.entries(cleanedFilters).length <= 0) {
+    return null;
+  }
+
+  const clause = Object.entries(cleanedFilters).map(([field, values]) => ({
+    'terms': {
+      [field]: values
+    }
+  }));
+
+  return clause;
+}
+
+queryGenerator.getTextSearchClause = (searchText) => {
+  const clause = {
+    'bool': {
+      'should': []
+    }
+  };
+  const strArr = searchText.trim().split(' ');
+  const result = strArr.map(
+    term => term.trim()
+  ).filter(
+    term => term.length > 2
+  );
+  const keywords = result.length === 0 ? '' : result.join(' ');
+
+  // No search terms, so return null
+  if (keywords == '') {
+    return null;
+  }
+
+  const termArr = keywords.split(' ').map((t) => t.trim());
+  const uniqueTermArr = termArr.filter((t, idx) => {
+    return termArr.indexOf(t) === idx;
+  });
+  uniqueTermArr.filter((term) => term.trim() != '').forEach((term) => {
+    let dsl = {};
+    let searchTerm = term.trim();
+
+    dsl.multi_match = {
+      'query': searchTerm,
+      'fields': DATASET_FIELDS.map((field) => `${field}.search`),
+    };
+    clause.bool.should.push(dsl);
+  });
+
+  return clause;
+};
+
+queryGenerator.getSearchQueryV2 = (searchText, filters, options, returnFields) => {
   const body = {};
+  const compoundQuery = {
+    'bool': {
+      'must': [],
+    },
+  };
+  const filtersClause = queryGenerator.getFiltersClause(filters);
+  const textSearchClause = queryGenerator.getTextSearchClause(searchText);
+
+  body['_source'] = returnFields;
 
   if (options) {
     body.size = options.pageInfo.pageSize;
     body.from = (options.pageInfo.page - 1 ) * options.pageInfo.pageSize;
   }
 
-  let compoundQuery = {};
-  compoundQuery.bool = {};
-  compoundQuery.bool.must = [];
-
-  const strArr = searchText.trim().split(" ");
-  const result = [];
-  strArr.forEach((term) => {
-    const t = term.trim();
-    if (t.length > 2) {
-      result.push(t);
-    }
-  });
-  const keywords = result.length === 0 ? "" : result.join(" ");
-  if(keywords != ""){
-    const termArr = keywords.split(" ").map((t) => t.trim());
-    const uniqueTermArr = termArr.filter((t, idx) => {
-      return termArr.indexOf(t) === idx;
-    });
-    uniqueTermArr.forEach((term) => {
-      let searchTerm = term.trim();
-      if(searchTerm != ""){
-        let clause = {};
-        clause.bool = {};
-        clause.bool.should = [];
-        let dsl = {};
-        dsl.multi_match = {};
-        dsl.multi_match.query = searchTerm;
-        //dsl.multi_match.analyzer = "standard_analyzer";
-        dsl.multi_match.fields = [
-          'dataset_title',
-          'description',
-          'dbGaP_phs',
-          'dbGaP_URL',
-          'PI_name',
-          'GPA',
-          'dataset_doc',
-          'dataset_pmid',
-          'funding_source',
-          // 'release_date',
-          'limitations_for_reuse',
-          'assay_method',
-          'data_type',
-          'study_type',
-          'analyte_type',
-          'primary_disease',
-          'anatomic_site',
-          'age',
-          'sex',
-          'ethnicity',
-          'race',
-          'sample_is_normal',
-          // 'participant_count',
-          // 'sample_count',
-          'ancestry',
-          'study_links',
-          'related_genes',
-          'related_diseases',
-          'related_terms',
-        ].map((field) => `${field}.search`);
-        clause.bool.should.push(dsl);
-        let nestedFields = [
-        // "case_age.k",
-        //   "case_age_at_diagnosis.k",
-        //   "case_age_at_trial.k",
-        //   "case_disease_diagnosis.k",
-        //   "case_disease_diagnosis.s",
-        //   "case_ethnicity.k",
-        //   "case_gender.k",
-        //   "case_proband.k",
-        //   "case_race.k",
-        //   "case_sex.k",
-        //   "case_sex_at_birth.k",
-        //   "case_treatment_administered.k",
-        //   "case_treatment_outcome.k",
-        //   "case_tumor_site.k",
-        //   "case_tumor_site.s",
-        //   "donor_age.k",
-        //   "donor_disease_diagnosis.k",
-        //   "donor_sex.k",
-        //   "project_anatomic_site.k",
-        //   "project_cancer_studied.k",
-        //   "sample_analyte_type.k",
-        //   "sample_anatomic_site.k",
-        //   "sample_assay_method.k",
-        //   "sample_composition_type.k",
-        //   "sample_repository_name.k",
-        //   "sample_is_cell_line.k",
-        //   "sample_is_normal.k",
-        //   "sample_is_xenograft.k"
-        ];
-        nestedFields.map((f) => {
-          let idx = f.indexOf('.');
-          let parent = f.substring(0, idx);
-          let dsl = {};
-          dsl.nested = {};
-          dsl.nested.path = parent;
-          dsl.nested.query = {};
-          dsl.nested.query.match = {};
-          dsl.nested.query.match[f] = {"query":searchTerm};
-          // clause.bool.should.push(dsl);
-        });
-        // let m = {};
-        // dsl = {};
-        // dsl.nested = {};
-        // dsl.nested.path = "projects";
-        // dsl.nested.query = {};
-        // dsl.nested.query.bool = {};
-        // dsl.nested.query.bool.should = [];
-        // m.match = {
-        //   "projects.p_k": searchTerm
-        // };
-        // dsl.nested.query.bool.should.push(m);
-        /*
-        m = {};
-        m.nested = {};
-        m.nested.path = "projects.p_v";
-        m.nested.query = {};
-        m.nested.query.match = {};
-        m.nested.query.match["projects.p_v.k"] = {"query":searchTerm};
-        dsl.nested.query.bool.should.push(m);
-        */
-        // clause.bool.should.push(dsl);
-    
-        dsl = {};
-        dsl.nested = {};
-        dsl.nested.path = "additional";
-        dsl.nested.inner_hits = {};
-        dsl.nested.inner_hits.name = searchTerm;
-        dsl.nested.inner_hits.highlight = {
-          pre_tags: ["<b>"],
-          post_tags: ["</b>"],
-          fields: {
-            "additional.attr_set.k": {}
-          }
-        };
-        dsl.nested.query = {};
-        dsl.nested.query.bool = {};
-        dsl.nested.query.bool.should = [];
-        /*
-        m = {};
-        m.match = {
-          "additional.attr_name": searchTerm
-        };
-        dsl.nested.query.bool.should.push(m);
-        */
-        /*
-        m = {};
-        m.nested = {};
-        m.nested.path = "additional.attr_set";
-        m.nested.query = {};
-        m.nested.query.match = {};
-        m.nested.query.match["additional.attr_set.k"] = {"query":searchTerm};
-        dsl.nested.query.bool.should.push(m);
-        clause.bool.should.push(dsl);
-        */
-        compoundQuery.bool.must.push(clause);
-      }
-    });
-    
+  if (filtersClause != null) {
+    compoundQuery.bool['filter'] = filtersClause;
   }
 
-  if (Object.entries(filters).length > 0) {
-    const clause = {
-      'bool': {
-        'should': Object.entries(filters).map(([field, values]) => {
-          return {
-            'terms': {
-              [field]: values
-            }
-          }
-        })
-      }
-    };
-    compoundQuery.bool.must.push(clause);
+  if (textSearchClause != null) {
+    compoundQuery.bool.must.push(textSearchClause);
   }
 
-  if (compoundQuery.bool.must.length > 0) {
+  if (compoundQuery.bool.must.length > 0 || compoundQuery.bool.filter) {
     body.query = compoundQuery;
   }
-  
+
   let agg = {};
   agg.myAgg = {};
   agg.myAgg.terms = {};
-  agg.myAgg.terms.field = "data_resource_id";
+  agg.myAgg.terms.field = "dbGaP_phs";
   agg.myAgg.terms.size = 1000;
 
   // body.aggs = agg;
@@ -354,67 +254,88 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options) => {
     pre_tags: ["<b>"],
     post_tags: ["</b>"],
     fields: {
-      'dataset_title': { number_of_fragments: 0 },
-      'description': { number_of_fragments: 0 },
-      'dbGaP_phs': { number_of_fragments: 0 },
-      'dbGaP_URL': { number_of_fragments: 0 },
-      'PI_name': { number_of_fragments: 0 },
-      'GPA': { number_of_fragments: 0 },
-      'dataset_doc': { number_of_fragments: 0 },
-      'dataset_pmid': { number_of_fragments: 0 },
-      'funding_source': { number_of_fragments: 0 },
+      // 'dataset_uuid': { number_of_fragments: 0 },
+      'dataset_title.search': { number_of_fragments: 0 },
+      'description.search': { number_of_fragments: 0 },
+      'dataset_maximum_age_at_baseline.search': { number_of_fragments: 0 },
+      'dataset_minimum_age_at_baseline.search': { number_of_fragments: 0 },
+      'dataset_source_id.search': { number_of_fragments: 0 },
+      'dataset_source_repo.search': { number_of_fragments: 0 },
+      'dataset_source_url.search': { number_of_fragments: 0 },
+      'dataset_year_enrollment_ended.search': { number_of_fragments: 0 },
+      'dataset_year_enrollment_started.search': { number_of_fragments: 0 },
+      'PI_name.search': { number_of_fragments: 0 },
+      // 'GPA': { number_of_fragments: 0 },
+      'dataset_doc.search': { number_of_fragments: 0 },
+      'dataset_pmid.search': { number_of_fragments: 0 },
+      'funding_source.search': { number_of_fragments: 0 },
       // 'release_date': { number_of_fragments: 0 },
-      'limitations_for_reuse': { number_of_fragments: 0 },
-      'assay_method': { number_of_fragments: 0 },
-      'data_type': { number_of_fragments: 0 },
-      'study_type': { number_of_fragments: 0 },
-      'analyte_type': { number_of_fragments: 0 },
-      'primary_disease': { number_of_fragments: 0 },
-      'anatomic_site': { number_of_fragments: 0 },
-      'age': { number_of_fragments: 0 },
-      'sex': { number_of_fragments: 0 },
-      'ethnicity': { number_of_fragments: 0 },
-      'race': { number_of_fragments: 0 },
-      'sample_is_normal': { number_of_fragments: 0 },
+      'limitations_for_reuse.search': { number_of_fragments: 0 },
+      'assay_method.search': { number_of_fragments: 0 },
+      'study_type.search': { number_of_fragments: 0 },
+      'primary_disease.search': { number_of_fragments: 0 },
       // 'participant_count': { number_of_fragments: 0 },
       // 'sample_count': { number_of_fragments: 0 },
-      'ancestry': { number_of_fragments: 0 },
-      'study_links': { number_of_fragments: 0 },
-      'related_genes': { number_of_fragments: 0 },
-      'related_diseases': { number_of_fragments: 0 },
-      'related_terms': { number_of_fragments: 0 },
+      'study_links.search': { number_of_fragments: 0 },
+      'related_genes.search': { number_of_fragments: 0 },
+      'related_diseases.search': { number_of_fragments: 0 },
+      'related_terms.search': { number_of_fragments: 0 },
     },
   };
   return body;
 };
 
-// Generates a bucket aggregation query on dataset properties
-queryGenerator.getDatasetFiltersQuery = (searchText, searchFilters) => {
+/**
+ * Generates a bucket aggregation query on dataset properties
+ * @param {String} searchText The text to search for
+ * @param {Object} searchFilters The filters to apply
+ * @param {String} excludedField The field to exclude from the filters
+ * @returns {Object} Opensearch query to retrieve filter counts
+ */
+queryGenerator.getDatasetFiltersQuery = (searchText, searchFilters, excludedField) => {
   // Borrow some of the search query
-  const query = queryGenerator.getSearchQueryV2(searchText, searchFilters);
+  const body = {};
+  const compoundQuery = {
+    'bool': {
+      'must': [],
+    },
+  };
+  const filtersClause = queryGenerator.getFiltersClause(Object.fromEntries(
+    Object.entries(searchFilters).filter( // Remove excluded field from filters
+      ([filterName]) => filterName != excludedField
+    )
+  ));
+  const textSearchClause = queryGenerator.getTextSearchClause(searchText);
+
+  if (filtersClause != null) {
+    compoundQuery.bool['filter'] = filtersClause;
+  }
+
+  if (textSearchClause != null) {
+    compoundQuery.bool.must.push(textSearchClause);
+  }
+
+  if (compoundQuery.bool.must.length > 0) {
+    body.query = compoundQuery;
+  }
 
   // Customize search query
-  query.aggs = {};
-  query.size = 0;
+  body.aggs = {};
+  body.size = 0;
   delete query.highlight;
 
-  const BUCKET_FIELDS = [
-    'primary_disease',
-  ];
-
-  // Aggregate on filter fields
-  BUCKET_FIELDS.forEach((fieldName) => {
-    query.aggs[fieldName] = {
-      'terms': {
-        'field': fieldName,
-        'order': {
-          '_key': 'asc'
-        }
-      }
+  // Aggregate on the target field
+  body.aggs[excludedField] = {
+    'terms': {
+      'field': excludedField,
+      'order': {
+        '_key': 'asc'
+      },
+      'size': 100000
     }
-  });
+  };
 
-  return query;
+  return body;
 };
 
 queryGenerator.getParticipatingResourcesSearchQuery = (filters, options) => {

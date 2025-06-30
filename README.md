@@ -10,21 +10,20 @@
 
 ## Prerequisites
 
-- Elasticsearch 7.17.10
-- MySQL 8.0.34.0
-- Node.js 16.18.0
+- Opensearch 2.16.0
+- Node.js 16.20.0
 
 ## Set up repository
 
 Clone this repository with the command
 
 ```bash
-git clone https://github.com/CBIIT/CCDC-WebService.git
+git clone https://github.com/CBIIT/INS-REST-WebService.git
 ```
 
 ## Install Node.js packages
 
-Run `yarn install` or `npm install`, depending on which package manager you use.
+Run `npm ci`, depending on which package manager you use.
 
 ## Environment variables
 
