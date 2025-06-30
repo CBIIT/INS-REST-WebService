@@ -315,7 +315,7 @@ queryGenerator.getDatasetFiltersQuery = (searchText, searchFilters, excludedFiel
     compoundQuery.bool.must.push(textSearchClause);
   }
 
-  if (compoundQuery.bool.must.length > 0) {
+  if (compoundQuery.bool.must.length > 0 || compoundQuery.bool.filter) {
     body.query = compoundQuery;
   }
 
