@@ -171,31 +171,24 @@ queryGenerator.getFiltersClause = (filters) => {
 
 queryGenerator.getTextSearchConditions = (searchText) => {
   const conditions = [];
-  const strArr = searchText.trim().split(' ');
-  const result = strArr.map(
+  const searchTerms = searchText.trim().split(' ').map(
     term => term.trim()
   ).filter(
     term => term.length > 2
   );
-  const keywords = result.length === 0 ? '' : result.join(' ');
-
-  // No search terms, so return null
-  if (keywords == '') {
-    return null;
-  }
-
-  const termArr = keywords.split(' ').map((t) => t.trim());
-  const uniqueTermArr = termArr.filter((t, idx) => {
-    return termArr.indexOf(t) === idx;
+  const uniqueSearchTerms = searchTerms.filter((term, idx) => {
+    return searchTerms.indexOf(term) === idx;
   });
-  uniqueTermArr.filter((term) => term.trim() != '').forEach((term) => {
-    let dsl = {};
-    let searchTerm = term.trim();
 
-    dsl.multi_match = {
-      'query': searchTerm,
-      'fields': DATASET_FIELDS.map((field) => `${field}.search`),
+  // Add a search condition for finding each term in any of the dataset fields
+  uniqueSearchTerms.forEach((term) => {
+    const dsl = {
+      'multi_match': {
+        'query': term,
+        'fields': DATASET_FIELDS.map((field) => `${field}.search`),
+      }
     };
+
     conditions.push(dsl);
   });
 
