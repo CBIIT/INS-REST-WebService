@@ -217,7 +217,6 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options, returnFields) =
   }
 
   if (textSearchClause != null) {
-    // compoundQuery.bool.must.push(textSearchClause);
     compoundQuery.bool.must = textSearchClause;
   }
 
