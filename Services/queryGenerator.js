@@ -169,12 +169,8 @@ queryGenerator.getFiltersClause = (filters) => {
   return clause;
 }
 
-queryGenerator.getTextSearchClause = (searchText) => {
-  const clause = {
-    'bool': {
-      'should': []
-    }
-  };
+queryGenerator.getTextSearchConditions = (searchText) => {
+  const conditions = [];
   const strArr = searchText.trim().split(' ');
   const result = strArr.map(
     term => term.trim()
@@ -200,10 +196,10 @@ queryGenerator.getTextSearchClause = (searchText) => {
       'query': searchTerm,
       'fields': DATASET_FIELDS.map((field) => `${field}.search`),
     };
-    clause.bool.should.push(dsl);
+    conditions.push(dsl);
   });
 
-  return clause;
+  return conditions;
 };
 
 queryGenerator.getSearchQueryV2 = (searchText, filters, options, returnFields) => {
@@ -214,7 +210,7 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options, returnFields) =
     },
   };
   const filtersClause = queryGenerator.getFiltersClause(filters);
-  const textSearchClause = queryGenerator.getTextSearchClause(searchText);
+  const textSearchClause = queryGenerator.getTextSearchConditions(searchText);
 
   body['_source'] = returnFields;
 
@@ -228,7 +224,8 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options, returnFields) =
   }
 
   if (textSearchClause != null) {
-    compoundQuery.bool.must.push(textSearchClause);
+    // compoundQuery.bool.must.push(textSearchClause);
+    compoundQuery.bool.must = textSearchClause;
   }
 
   if (compoundQuery.bool.must.length > 0 || compoundQuery.bool.filter) {
@@ -305,7 +302,7 @@ queryGenerator.getDatasetFiltersQuery = (searchText, searchFilters, excludedFiel
       ([filterName]) => filterName != excludedField
     )
   ));
-  const textSearchClause = queryGenerator.getTextSearchClause(searchText);
+  const textSearchClause = queryGenerator.getTextSearchConditions(searchText);
 
   if (filtersClause != null) {
     compoundQuery.bool['filter'] = filtersClause;
