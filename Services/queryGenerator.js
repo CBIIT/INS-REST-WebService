@@ -301,7 +301,7 @@ queryGenerator.getDatasetFiltersQuery = (searchText, searchFilters, excludedFiel
   }
 
   if (textSearchClause != null) {
-    compoundQuery.bool.must.push(textSearchClause);
+    compoundQuery.bool.must = textSearchClause;
   }
 
   if (compoundQuery.bool.must.length > 0 || compoundQuery.bool.filter) {
