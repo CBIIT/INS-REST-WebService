@@ -233,10 +233,10 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options, returnFields) =
   // body.aggs = agg;
   // Add sort parameters
   if (options?.sort) {
-    body.sort = [];
-    const tmp = {};
-    tmp[options.sort.k] = options.sort.v;
-    body.sort.push(tmp);
+    body.sort = []; // Initialize a list of sort clauses
+    const sortClause = {};
+    sortClause[options.sort.k] = options.sort.v; // In our API, "k" is the property name, and "v" is the direction
+    body.sort.push(sortClause);
   }
 
   body.highlight = {
