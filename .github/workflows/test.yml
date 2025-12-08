@@ -31,7 +31,7 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      - name: Run Jest
+      - name: Run Vitest
         run: npm run test:ci
 
       - name: Coveralls GitHub Action
