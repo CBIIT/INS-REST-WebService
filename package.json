@@ -1,5 +1,5 @@
 {
-  "name": "ccdc",
+  "name": "ins-rest-webservice",
   "version": "3.2.0",
   "description": "Childhood Cancer Data Catalog",
   "main": "app.js",
