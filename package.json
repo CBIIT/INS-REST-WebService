@@ -1,11 +1,12 @@
 {
-  "name": "ccdc",
-  "version": "1.0.0",
+  "name": "ins-rest-webservice",
+  "version": "3.2.0",
   "description": "Childhood Cancer Data Catalog",
   "main": "app.js",
   "scripts": {
     "start": "nodemon app.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest",
+    "test:ci": "TZ=UTC CI=true vitest --reporter verbose --coverage --maxConcurrency=2"
   },
   "author": "Wei Yu",
   "license": "ISC",
@@ -26,5 +27,9 @@
     "nodemon": "^3.1.4",
     "path-to-regexp": "^0.1.12",
     "winston": "^3.14.2"
+  },
+  "devDependencies": {
+    "@vitest/coverage-v8": "^4.0.15",
+    "vitest": "^4.0.15"
   }
 }
