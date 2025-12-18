@@ -1,4 +1,7 @@
-# CCDC Backend
+# C3DC Rest Backend
+
+[![Test](https://github.com/CBIIT/INS-REST-WebService/actions/workflows/test.yml/badge.svg)](https://github.com/CBIIT/INS-REST-WebService/actions/workflows/test.yml)
+[![Coverage Status](https://coveralls.io/repos/github/CBIIT/INS-REST-WebService/badge.svg?branch=copilot/sub-pr-39)](https://coveralls.io/github/CBIIT/INS-REST-WebService?branch=main)
 
 ## Table of Contents
 
