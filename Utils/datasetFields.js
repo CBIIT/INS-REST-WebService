@@ -3,9 +3,11 @@ const datasetFields = {
   'Dataset UUID': 'dataset_uuid',
   'Dataset Title': 'dataset_title',
   'Description': 'description',
+  'Experimental Approaches': 'experimental_approaches',
   'Dataset Source ID': 'dataset_source_id',
   'Dataset Source Repository': 'dataset_source_repo',
   'Dataset Source URL': 'dataset_source_url',
+  'Institute': 'institute',
   'Principal Investigator(s)': 'PI_name',
   // Specifically exclude GPA, because we don't display it anywhere
   // 'Grant Program Administrator': 'GPA',
