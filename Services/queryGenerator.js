@@ -123,8 +123,12 @@ queryGenerator.getSearchAggregationQuery = (searchText) => {
 };
 
 queryGenerator.getFiltersClause = (filters) => {
-  // Handle null parameter
-  if (!filters) {
+  // Handle null or invalid parameter
+  if (
+    !filters ||
+    typeof filters !== 'object' ||
+    Array.isArray(filters)
+  ) {
     return null;
   }
 
@@ -160,9 +164,36 @@ queryGenerator.getHighlightClause = () => {
   };
 };
 
+queryGenerator.getSortClause = (options) => {
+  // Handle null or wrong type
+  if (!options || typeof options !== 'object' || Array.isArray(options)) {
+    return null;
+  }
+
+  // Check whether a sort object exists
+  if (!options.sort || typeof options.sort !== 'object' || Array.isArray(options.sort)) {
+    return null;
+  }
+
+  // Check whether the sort object has a 'k' and 'v' property
+  if (!options.sort.k || !options.sort.v) {
+    return null;
+  }
+
+  // Check whether the sort property and direction are strings
+  if (typeof options.sort.k !== 'string' || typeof options.sort.v !== 'string') {
+    return null;
+  }
+
+  // Return the sort clause
+  return {
+    [options.sort.k]: options.sort.v,
+  };
+};
+
 queryGenerator.getTextSearchConditions = (searchText) => {
   // Handle null parameter
-  if (!searchText) {
+  if (!searchText || typeof searchText !== 'string') {
     return [];
   }
 
@@ -203,12 +234,21 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options, returnFields) =
 
   body['_source'] = returnFields && returnFields.length > 0 ? returnFields : false;
 
-  if (options?.pageInfo?.pageSize) {
-    body.size = options.pageInfo.pageSize;
+  if (options && typeof options === 'object' && !Array.isArray(options)) {
+    if (options.pageInfo?.pageSize > 0) {
+      body.size = options.pageInfo.pageSize;
 
-    if (options.pageInfo.page) {
-      body.from = body.size * (options.pageInfo.page - 1);
+      if (options.pageInfo.page > 0) {
+        body.from = body.size * (options.pageInfo.page - 1);
+      } else {
+        body.from = 0;
+      }
     }
+  }
+
+  const sortClause = queryGenerator.getSortClause(options);
+  if (sortClause != null) {
+    body.sort = [sortClause];
   }
 
   if (filtersClause != null) {
@@ -230,13 +270,6 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options, returnFields) =
   agg.myAgg.terms.size = 1000;
 
   // body.aggs = agg;
-  // Add sort parameters
-  if (options?.sort) {
-    body.sort = []; // Initialize a list of sort clauses
-    const sortClause = {};
-    sortClause[options.sort.k] = options.sort.v; // In our API, "k" is the property name, and "v" is the direction
-    body.sort.push(sortClause);
-  }
 
   body.highlight = queryGenerator.getHighlightClause();
 
