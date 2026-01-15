@@ -194,7 +194,7 @@ queryGenerator.getSortClause = (options) => {
 queryGenerator.getTextSearchConditions = (searchText) => {
   // Handle null parameter
   if (!searchText || typeof searchText !== 'string') {
-    return [];
+    return null;
   }
 
   const conditions = [];
@@ -206,6 +206,11 @@ queryGenerator.getTextSearchConditions = (searchText) => {
   const uniqueSearchTerms = searchTerms.filter((term, idx) => {
     return searchTerms.indexOf(term) === idx;
   });
+
+  // Check again that actual search terms exist
+  if (uniqueSearchTerms.length <= 0) {
+    return null;
+  }
 
   // Add a search condition for finding each term in any of the dataset fields
   uniqueSearchTerms.forEach((term) => {
@@ -222,31 +227,64 @@ queryGenerator.getTextSearchConditions = (searchText) => {
   return conditions;
 };
 
+/**
+ * Constructs a search query for the datasets index
+ * @param {String} searchText The text to search for
+ * @param {Object} filters The filters to apply
+ * @param {Object} options Sort and pagination options
+ * @param {Array} returnFields The fields to return
+ * @returns 
+ */
 queryGenerator.getSearchQueryV2 = (searchText, filters, options, returnFields) => {
-  const body = {};
+  const body = {
+    from: 0,
+    size: 10,
+  };
   const compoundQuery = {
     'bool': {
-      'must': [],
     },
   };
-  const filtersClause = queryGenerator.getFiltersClause(filters);
-  const textSearchClause = queryGenerator.getTextSearchConditions(searchText);
+  let filtersClause;
+  let textSearchClause;
+
+  // Check searchText type
+  // Loose null equality treats undefined as null
+  if (searchText != null && typeof searchText !== 'string') {
+    return null;
+  }
+
+  // Check filters type
+  if (typeof filters !== 'object' || Array.isArray(filters)) {
+    return null;
+  }
+
+  // Check options type
+  if (typeof options !== 'object' || Array.isArray(options)) {
+    return null;
+  }
+
+  // Check returnFields type and length
+  if (!Array.isArray(returnFields) || returnFields.length <= 0) {
+    return null;
+  }
+
+  filtersClause = queryGenerator.getFiltersClause(filters);
+  textSearchClause = queryGenerator.getTextSearchConditions(searchText);
 
   body['_source'] = returnFields && returnFields.length > 0 ? returnFields : false;
 
   if (options && typeof options === 'object' && !Array.isArray(options)) {
     if (options.pageInfo?.pageSize > 0) {
       body.size = options.pageInfo.pageSize;
+    }
 
-      if (options.pageInfo.page > 0) {
-        body.from = body.size * (options.pageInfo.page - 1);
-      } else {
-        body.from = 0;
-      }
+    if (options.pageInfo?.page > 0) {
+      body.from = body.size * (options.pageInfo.page - 1);
     }
   }
 
   const sortClause = queryGenerator.getSortClause(options);
+
   if (sortClause != null) {
     body.sort = [sortClause];
   }
@@ -259,7 +297,7 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options, returnFields) =
     compoundQuery.bool.must = textSearchClause;
   }
 
-  if (compoundQuery.bool.must.length > 0 || compoundQuery.bool.filter) {
+  if (compoundQuery.bool.must?.length > 0 || compoundQuery.bool.filter) {
     body.query = compoundQuery;
   }
 

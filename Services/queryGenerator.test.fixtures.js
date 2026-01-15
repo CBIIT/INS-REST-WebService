@@ -78,7 +78,3 @@ export const normalOSQuery = {
   ],
   highlight: oSHighlightClause,
 };
-export const nullOSQuery = {
-  _source: false,
-  highlight: oSHighlightClause,
-};

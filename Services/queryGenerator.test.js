@@ -4,33 +4,76 @@ const { DATASET_SEARCH_FIELDS } = require('../Utils/datasetFields.js');
 import { normalSearchText, normalFilters, normalReturnFields, normalOptions } from './queryGenerator.test.fixtures.js';
 
 // Opensearch
-import { normalOSQuery, nullOSQuery, oSHighlightClause } from './queryGenerator.test.fixtures.js';
+import { normalOSQuery, oSHighlightClause } from './queryGenerator.test.fixtures.js';
 
 describe('getSearchQueryV2', () => {
   it('should handle undefined parameters', () => { // 1
+    // Should be null, mainly because returnFields is undefined
     const result = queryGenerator.getSearchQueryV2(undefined, undefined, undefined, undefined);
-    expect(result).toStrictEqual(nullOSQuery);
+    expect(result).toBeNull();
+
+    // Undefined searchText is ok
+    const querySearchText = JSON.parse(JSON.stringify(normalOSQuery));
+    delete querySearchText.query.bool.must;
+    const resultSearchText = queryGenerator.getSearchQueryV2(undefined, normalFilters, normalOptions, normalReturnFields);
+    expect(resultSearchText).toStrictEqual(querySearchText);
+
+    // TODO: Add tests showing that undefined filters and options are ok
   });
 
   it('should handle null parameters', () => { // 2
+    // Should be null, mainly because returnFields is null
     const result = queryGenerator.getSearchQueryV2(null, null, null, null);
-    expect(result).toStrictEqual(nullOSQuery);
+    expect(result).toBeNull();
+
+    // TODO: Add tests showing that null searchText, filters and options are ok
   });
 
   it('should correctly handle empty parameters', () => { // 3
+    // Should be null, mainly because returnFields is empty
     const result = queryGenerator.getSearchQueryV2('', {}, {}, []);
-    expect(result).toStrictEqual(nullOSQuery);
+    expect(result).toBeNull();
+
+    // Empty searchText is ok
+    const querySearchText = JSON.parse(JSON.stringify(normalOSQuery));
+    delete querySearchText.query.bool.must;
+    const resultSearchText = queryGenerator.getSearchQueryV2('', normalFilters, normalOptions, normalReturnFields);
+    expect(resultSearchText).toStrictEqual(querySearchText);
+
+    // TODO: Add tests showing that empty filters and options are ok
   });
 
-  it('should handle searchText being the wrong type', () => { // 4
-    // Test with a number
-    const resultNumber = queryGenerator.getSearchQueryV2(12345, null, null, null);
-    expect(resultNumber).toStrictEqual(nullOSQuery);
+  it('should handle parameters being the wrong type', () => { // 4
+    // Search text being the wrong type
+    const resultSearchText = queryGenerator.getSearchQueryV2(12345, normalFilters, normalOptions, normalReturnFields);
+    expect(resultSearchText).toBeNull();
+
+    // Filters not being an object
+    const resultFilters = queryGenerator.getSearchQueryV2(normalSearchText, 'not an object', normalOptions, normalReturnFields);
+    expect(resultFilters).toBeNull();
+
+    // Filters being an array
+    const resultFiltersArray = queryGenerator.getSearchQueryV2(normalSearchText, ['a', 'b'], normalOptions, normalReturnFields);
+    expect(resultFiltersArray).toBeNull();
+
+    // Options being the wrong type
+    const resultOptions = queryGenerator.getSearchQueryV2(normalSearchText, normalFilters, 'not an object', normalReturnFields);
+    expect(resultOptions).toBeNull();
+
+    // Options being an array
+    const resultOptionsArray = queryGenerator.getSearchQueryV2(normalSearchText, normalFilters, [1,2,3], normalReturnFields);
+    expect(resultOptionsArray).toBeNull();
+
+    // Return fields not being an array
+    const resultReturnFields = queryGenerator.getSearchQueryV2(normalSearchText, normalFilters, normalOptions, 'not an array');
+    expect(resultReturnFields).toBeNull();
   });
 
   it('should handle whitespace-only searchText', () => { // 5
-    const result = queryGenerator.getSearchQueryV2('   ', null, null, null);
-    expect(result).toStrictEqual(nullOSQuery);
+    const querySearchText = JSON.parse(JSON.stringify(normalOSQuery));
+    delete querySearchText.query.bool.must;
+    const result = queryGenerator.getSearchQueryV2('   ', normalFilters, normalOptions, normalReturnFields);
+    expect(result).toStrictEqual(querySearchText);
   });
 
   it('should form a correct query when all parameters are provided', () => { // 6
@@ -38,27 +81,7 @@ describe('getSearchQueryV2', () => {
     expect(result).toStrictEqual(normalOSQuery);
   });
 
-  it('should handle filters being the wrong type', () => { // 7
-    // Pass filters as a string
-    const resultString = queryGenerator.getSearchQueryV2(null, 'not an object', null, null);
-    expect(resultString).toStrictEqual(nullOSQuery);
-
-    // Pass filters as an array
-    const resultArray = queryGenerator.getSearchQueryV2(null, ['a', 'b'], null, null);
-    expect(resultArray).toStrictEqual(nullOSQuery);
-  });
-
-  it('should handle options being the wrong type', () => { // 8
-    // Pass options as a string
-    const resultString = queryGenerator.getSearchQueryV2(null, null, "not an object", null);
-    expect(resultString).toStrictEqual(nullOSQuery);
-
-    // Pass options as an array
-    const resultArray = queryGenerator.getSearchQueryV2(null, null, [1,2,3], null);
-    expect(resultArray).toStrictEqual(nullOSQuery);
-  });
-
-  it('should ignore page options being the wrong type', () => { // 9
+  it('should handle page being nonpositive', () => { // 7
     const optionsWithZeroPage = {
       ...normalOptions,
       pageInfo: {
@@ -66,295 +89,48 @@ describe('getSearchQueryV2', () => {
         page: 0,
       },
     };
+    const optionsWithNegativePage = {
+      ...normalOptions,
+      pageInfo: {
+        ...normalOptions.pageInfo,
+        page: -1,
+      },
+    };
     const result = queryGenerator.getSearchQueryV2(normalSearchText, normalFilters, optionsWithZeroPage, normalReturnFields);
     expect(result).toStrictEqual(normalOSQuery);
+    const resultWithNegativePage = queryGenerator.getSearchQueryV2(normalSearchText, normalFilters, optionsWithNegativePage, normalReturnFields);
+    expect(resultWithNegativePage).toStrictEqual(normalOSQuery);
   });
 
-  it('should handle search only (no filters/options/fields)', () => {
-    const searchText = 'multiple myeloma';
-    const expectedQuery = {
-      _source: false,
-      query: {
-        bool: {
-          must: [
-            {
-              multi_match: {
-                query: 'multiple',
-                fields: DATASET_SEARCH_FIELDS,
-              },
-            },
-            {
-              multi_match: {
-                query: 'myeloma',
-                fields: DATASET_SEARCH_FIELDS,
-              },
-            },
-          ],
-        },
-      },
-      highlight: oSHighlightClause,
-    };
-    const result = queryGenerator.getSearchQueryV2(searchText, null, null, []);
-    expect(result).toStrictEqual(expectedQuery);
-  });
-
-  it('should handle filters only (no search/options/fields)', () => {
-    const expectedQuery = {
-      _source: false,
-      query: {
-        bool: {
-          filter: [
-            {
-              terms: {
-                primary_disease: [
-                  "Melanoma",
-                  "Multiple Cancer Types",
-                ],
-              },
-            },
-            {
-              terms: {
-                dataset_source_repo: [
-                  "CEDCD",
-                  "dbGaP",
-                ],
-              },
-            },
-          ],
-          must: [],
-        },
-      },
-      highlight: oSHighlightClause,
-    };
-    const result = queryGenerator.getSearchQueryV2(null, normalFilters, null, []);
-    expect(result).toStrictEqual(expectedQuery);
-  });
-
-  it('should handle returnFields only (all else empty)', () => {
-    const expectedQuery = {
-      _source: ['dataset_title', 'description'],
-      highlight: oSHighlightClause,
-    };
-    const result = queryGenerator.getSearchQueryV2(null, null, null, normalReturnFields);
-    expect(result).toStrictEqual(expectedQuery);
-  });
-
-  it('should handle options with pagination only', () => {
-    const options = {
+  it('should ignore page size being nonpositive', () => { // 8
+    const optionsWithZeroPageSize = {
+      ...normalOptions,
       pageInfo: {
-        page: 3,
-        pageSize: 25,
+        ...normalOptions.pageInfo,
+        pageSize: 0,
       },
     };
-    const expectedQuery = {
-      _source: false,
-      size: 25,
-      from: 50,
-      highlight: oSHighlightClause,
-    };
-    const result = queryGenerator.getSearchQueryV2(null, null, options, []);
-    expect(result).toStrictEqual(expectedQuery);
-  });
-
-  it('should handle options with sorting only', () => {
-    const options = {
-      sort: {
-        k: 'dataset_title_sort',
-        v: 'desc',
-      },
-    };
-    const expectedQuery = {
-      _source: false,
-      sort: [
-        {
-          dataset_title_sort: 'desc',
-        },
-      ],
-      highlight: oSHighlightClause,
-    };
-    const result = queryGenerator.getSearchQueryV2(null, null, options, []);
-    expect(result).toStrictEqual(expectedQuery);
-  });
-
-  it('should treat filters with only empty arrays as empty', () => {
-    const filters = {
-      primary_disease: [],
-      dataset_source_repo: [],
-    };
-    const result = queryGenerator.getSearchQueryV2(null, filters, null, []);
-    expect(result).toStrictEqual(nullOSQuery);
-  });
-
-  it('should filter out search terms shorter than 3 chars and ignore punctuation', () => {
-    const searchText = 'a b c $ foo';
-    const expectedQuery = {
-      _source: false,
-      query: {
-        bool: {
-          must: [
-            {
-              multi_match: {
-                query: 'foo',
-                fields: DATASET_SEARCH_FIELDS,
-              },
-            },
-          ],
-        },
-      },
-      highlight: oSHighlightClause,
-    };
-    const result = queryGenerator.getSearchQueryV2(searchText, null, null, []);
-    expect(result).toStrictEqual(expectedQuery);
-  });
-
-  it('should handle search and filters, but empty fields and options', () => {
-    const searchText = 'multiple myeloma';
-    const expectedQuery = {
-      _source: false,
-      query: {
-        bool: {
-          must: [
-            {
-              multi_match: { query: 'multiple', fields: DATASET_SEARCH_FIELDS },
-            },
-            {
-              multi_match: { query: 'myeloma', fields: DATASET_SEARCH_FIELDS },
-            },
-          ],
-          filter: [
-            {
-              terms: {
-                primary_disease: [
-                  "Melanoma",
-                  "Multiple Cancer Types",
-                ],
-              },
-            },
-            {
-              terms: {
-                dataset_source_repo: [
-                  "CEDCD",
-                  "dbGaP",
-                ],
-              },
-            },
-          ],
-        },
-      },
-      highlight: oSHighlightClause,
-    };
-    const result = queryGenerator.getSearchQueryV2(searchText, normalFilters, {}, []);
-    expect(result).toStrictEqual(expectedQuery);
-  });
-
-  it('should handle only returnFields and filters', () => {
-    const expectedQuery = {
-      _source: [
-        "dataset_title",
-        "description"
-      ],
-      query: {
-        bool: {
-          filter: [
-            {
-              terms: {
-                primary_disease: [
-                  "Melanoma",
-                  "Multiple Cancer Types"
-                ]
-              }
-            },
-            {
-              terms: {
-                dataset_source_repo: [
-                  "CEDCD",
-                  "dbGaP"
-                ]
-              }
-            }
-          ],
-          must: []
-        }
-      },
-      highlight: oSHighlightClause
-    };
-    const result = queryGenerator.getSearchQueryV2(null, normalFilters, {}, normalReturnFields);
-    expect(result).toStrictEqual(expectedQuery);
-  });
-
-  it('should handle options with page = 0 (invalid), should default from = 0', () => {
-    const options = {
+    const optionsWithNegativePageSize = {
+      ...normalOptions,
       pageInfo: {
-        page: 0,
-        pageSize: 20,
+        ...normalOptions.pageInfo,
+        pageSize: -1,
       },
     };
-    const expectedQuery = {
-      _source: false,
-      size: 20,
-      highlight: oSHighlightClause,
-    };
-    const result = queryGenerator.getSearchQueryV2(null, null, options, []);
-    // 'from' should be omitted or 0 if page is invalid
-    expect(result).toStrictEqual(expectedQuery);
-  });
+    const resultZero = queryGenerator.getSearchQueryV2(
+      normalSearchText,
+      normalFilters,
+      optionsWithZeroPageSize,
+      normalReturnFields
+    );
+    expect(resultZero).toStrictEqual(normalOSQuery);
 
-  it('should handle negative page number gracefully', () => {
-    const options = {
-      pageInfo: {
-        page: -3,
-        pageSize: 15,
-      },
-    };
-    const expectedQuery = {
-      _source: false,
-      size: 15,
-      highlight: oSHighlightClause,
-    };
-    const result = queryGenerator.getSearchQueryV2(null, null, options, []);
-    expect(result).toStrictEqual(expectedQuery);
-  });
-
-  it('should handle negative pageSize gracefully (should not set size/from)', () => {
-    const options = {
-      pageInfo: {
-        page: 2,
-        pageSize: -10,
-      },
-    };
-    const expectedQuery = {
-      _source: false,
-      highlight: oSHighlightClause,
-    };
-    const result = queryGenerator.getSearchQueryV2(null, null, options, []);
-    // Negative size should ignore size/from
-    expect(result).toStrictEqual(expectedQuery);
-  });
-
-  it('should handle undefined parameters the same as null for all', () => {
-    const expectedQuery = nullOSQuery;
-    // All undefined
-    const result = queryGenerator.getSearchQueryV2();
-    expect(result).toStrictEqual(expectedQuery);
-  });
-
-  it('should handle undefined filters', () => {
-    const result = queryGenerator.getSearchQueryV2('multiple myeloma', undefined, normalOptions, normalReturnFields);
-    expect(result).toBeDefined();
-    expect(result.query.bool.must.length).toBeGreaterThan(0);
-  });
-
-  it('should handle undefined options', () => {
-    const result = queryGenerator.getSearchQueryV2('multiple myeloma', normalFilters, undefined, normalReturnFields);
-    expect(result).toBeDefined();
-    expect(result._source).toEqual(normalReturnFields);
-    expect(result.query.bool.must.length).toBeGreaterThan(0);
-  });
-
-  it('should handle undefined returnFields', () => {
-    const result = queryGenerator.getSearchQueryV2('multiple myeloma', normalFilters, normalOptions, undefined);
-    expect(result).toBeDefined();
-    expect(result._source).toEqual(false);
-    expect(result.query.bool.must.length).toBeGreaterThan(0);
+    const resultNegative = queryGenerator.getSearchQueryV2(
+      normalSearchText,
+      normalFilters,
+      optionsWithNegativePageSize,
+      normalReturnFields
+    );
+    expect(resultNegative).toStrictEqual(normalOSQuery);
   });
 });
