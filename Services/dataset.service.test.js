@@ -15,9 +15,19 @@ describe('search', () => {
     expect(result).toHaveProperty('data');
   });
 
+  it('should have the correct type for "data" in the results object', async () => {
+    const result = await datasetService.search(normalSearchText, normalFilters, normalOptions);
+    expect(Array.isArray(result.data)).toBe(true);
+  });
+
   it('should have a "total" key in the results object', async () => {
     const result = await datasetService.search(normalSearchText, normalFilters, normalOptions);
     expect(result).toHaveProperty('total');
+  });
+
+  it('should have the correct type for "total" in the results object', async () => {
+    const result = await datasetService.search(normalSearchText, normalFilters, normalOptions);
+    expect(result.total).toBeTypeOf('number');
   });
 
   it('should return default results if all parameters are undefined', async () => {
