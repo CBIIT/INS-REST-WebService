@@ -10,6 +10,16 @@ import {
 } from './dataset.service.test.fixtures.js';
 
 describe('search', () => {
+  it('should have a "data" key in the results object', async () => {
+    const result = await datasetService.search(normalSearchText, normalFilters, normalOptions);
+    expect(result).toHaveProperty('data');
+  });
+
+  it('should have a "total" key in the results object', async () => {
+    const result = await datasetService.search(normalSearchText, normalFilters, normalOptions);
+    expect(result).toHaveProperty('total');
+  });
+
   it('should return default results if all parameters are undefined', async () => {
     const result = await datasetService.search(undefined, undefined, undefined);
     const inclusiveResult = await datasetService.search(inclusiveSearchText, inclusiveFilters, inclusiveOptions);
