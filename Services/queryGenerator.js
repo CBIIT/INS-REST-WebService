@@ -254,12 +254,12 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options, returnFields) =
   }
 
   // Check filters type
-  if (typeof filters !== 'object' || Array.isArray(filters)) {
+  if (filters != null && (typeof filters !== 'object' || Array.isArray(filters))) {
     return null;
   }
 
   // Check options type
-  if (typeof options !== 'object' || Array.isArray(options)) {
+  if (options != null && (typeof options !== 'object' || Array.isArray(options))) {
     return null;
   }
 
