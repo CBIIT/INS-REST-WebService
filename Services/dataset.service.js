@@ -13,9 +13,37 @@ const FACET_FILTERS = [
 ]
 
 const search = async (searchText, filters, options) => {
+  let query = null;
   let result = {};
-  searchText = searchText.replace(/[^a-zA-Z0-9]+/g, ' '); // Ignore special characters
-  let searchableText = utils.getSearchableText(searchText);
+  let searchableText = null;
+
+  // Check searchText type
+  if (searchText && typeof searchText !== 'string') {
+    return result;
+  }
+
+  // Check filters type
+  if (filters && (typeof filters !== 'object' || Array.isArray(filters))) {
+    return result;
+  }
+
+  // Check options type
+  if (options && (typeof options !== 'object' || Array.isArray(options))) {
+    return result;
+  }
+
+  // Format the search text
+  if (searchText) {
+    searchText = searchText.replace(/[^a-zA-Z0-9]+/g, ' '); // Ignore special characters
+    searchableText = utils.getSearchableText(searchText);
+  }
+
+  query = queryGenerator.getSearchQueryV2(searchText, filters, options, DATASET_RETURN_FIELDS);
+
+  if (query == null) {
+    return result;
+  }
+
   if (false && searchableText !== "") {
     let aggregationKey = cacheKeyGenerator.getAggregationKey(searchableText);
     let aggregation = cache.getValue(aggregationKey);
@@ -32,7 +60,6 @@ const search = async (searchText, filters, options) => {
     result.aggs = 'all';
   }
   
-  let query = queryGenerator.getSearchQueryV2(searchText, filters, options, DATASET_RETURN_FIELDS);
   let searchResults = await elasticsearch.searchWithAggregations(config.indexDS, query);
   let datasets = searchResults.hits.hits.map((ds) => {
     if (ds.inner_hits) {
