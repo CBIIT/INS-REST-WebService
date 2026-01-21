@@ -233,7 +233,7 @@ queryGenerator.getTextSearchConditions = (searchText) => {
  * @param {Object} filters The filters to apply
  * @param {Object} options Sort and pagination options
  * @param {Array} returnFields The fields to return
- * @returns 
+ * @returns {Object|null} The OpenSearch query body object, or null if validation fails.
  */
 queryGenerator.getSearchQueryV2 = (searchText, filters, options, returnFields) => {
   const body = {
