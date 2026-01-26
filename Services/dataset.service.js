@@ -38,7 +38,7 @@ const search = async (searchText, filters, options) => {
     searchableText = utils.getSearchableText(sanitizedSearchText);
   }
 
-  query = queryGenerator.getSearchQueryV2(sanitizedSearchText, filters, options, DATASET_RETURN_FIELDS);
+  query = queryGenerator.getSearchQueryV2(searchableText, filters, options, DATASET_RETURN_FIELDS);
 
   if (query == null) {
     return result;
