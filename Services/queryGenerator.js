@@ -1,6 +1,3 @@
-const { query } = require("winston");
-const config = require("../Config");
-const { values } = require("lodash");
 const { DATASET_SEARCH_FIELDS, DATASET_HIGHLIGHT_FIELDS } = require('../Utils/datasetFields.js');
 
 let queryGenerator = {};
@@ -272,7 +269,7 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options, returnFields) =
   filtersClause = queryGenerator.getFiltersClause(filters);
   textSearchClause = queryGenerator.getTextSearchConditions(searchText);
 
-  body['_source'] = returnFields && returnFields.length > 0 ? returnFields : false;
+  body['_source'] = returnFields ?? false;
 
   // We already verified that options is the right type if it's not null
   // We must still verify that options is truthy
