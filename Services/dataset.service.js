@@ -34,11 +34,11 @@ const search = async (searchText, filters, options) => {
 
   // Format the search text
   if (searchText) {
-    searchText = searchText.replace(/[^a-zA-Z0-9]+/g, ' '); // Ignore special characters
-    searchableText = utils.getSearchableText(searchText);
+    const sanitizedSearchText = searchText.replace(/[^a-zA-Z0-9]+/g, ' '); // Ignore special characters
+    searchableText = utils.getSearchableText(sanitizedSearchText);
   }
 
-  query = queryGenerator.getSearchQueryV2(searchText, filters, options, DATASET_RETURN_FIELDS);
+  query = queryGenerator.getSearchQueryV2(sanitizedSearchText, filters, options, DATASET_RETURN_FIELDS);
 
   if (query == null) {
     return result;
@@ -48,7 +48,7 @@ const search = async (searchText, filters, options) => {
     let aggregationKey = cacheKeyGenerator.getAggregationKey(searchableText);
     let aggregation = cache.getValue(aggregationKey);
     if (!aggregation) {
-      let query = queryGenerator.getSearchAggregationQuery(searchText);
+      let query = queryGenerator.getSearchAggregationQuery(sanitizedSearchText);
       let searchResults = await elasticsearch.searchWithAggregations(config.indexDS, query);
       aggregation = searchResults.aggs.myAgg.buckets;
       //put in cache for 5 mins
