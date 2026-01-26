@@ -48,7 +48,7 @@ const search = async (searchText, filters, options) => {
     let aggregationKey = cacheKeyGenerator.getAggregationKey(searchableText);
     let aggregation = cache.getValue(aggregationKey);
     if (!aggregation) {
-      let query = queryGenerator.getSearchAggregationQuery(sanitizedSearchText);
+      let query = queryGenerator.getSearchAggregationQuery(searchableText);
       let searchResults = await elasticsearch.searchWithAggregations(config.indexDS, query);
       aggregation = searchResults.aggs.myAgg.buckets;
       //put in cache for 5 mins
