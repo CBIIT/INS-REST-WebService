@@ -245,6 +245,7 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options, returnFields) =
     },
   };
   let filtersClause;
+  let sortClause;
   let textSearchClause;
 
   // Check searchText type
@@ -273,7 +274,9 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options, returnFields) =
 
   body['_source'] = returnFields && returnFields.length > 0 ? returnFields : false;
 
-  if (options && typeof options === 'object' && !Array.isArray(options)) {
+  // We already verified that options is the right type if it's not null
+  // We must still verify that options is truthy
+  if (options) {
     if (options.pageInfo?.pageSize > 0) {
       body.size = options.pageInfo.pageSize;
     }
@@ -283,7 +286,7 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options, returnFields) =
     }
   }
 
-  const sortClause = queryGenerator.getSortClause(options);
+  sortClause = queryGenerator.getSortClause(options);
 
   if (sortClause != null) {
     body.sort = [sortClause];
@@ -300,14 +303,6 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options, returnFields) =
   if (compoundQuery.bool.must?.length > 0 || compoundQuery.bool.filter) {
     body.query = compoundQuery;
   }
-
-  let agg = {};
-  agg.myAgg = {};
-  agg.myAgg.terms = {};
-  agg.myAgg.terms.field = "dbGaP_phs";
-  agg.myAgg.terms.size = 1000;
-
-  // body.aggs = agg;
 
   body.highlight = queryGenerator.getHighlightClause();
 
