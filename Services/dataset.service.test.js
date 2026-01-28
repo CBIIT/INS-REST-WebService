@@ -1,5 +1,19 @@
-import { describe, it, expect } from 'vitest';
-const datasetService = require('./dataset.service.js');
+import {
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
+
+// These modules are CommonJS (`require(...)`). Instead of relying on module mocking,
+// we `spyOn` the exported functions and replace their implementation, which prevents
+// any real OpenSearch calls.
+import { createRequire } from "module";
+const require = createRequire(import.meta.url);
+
+const elasticsearch = require("../Components/elasticsearch");
+const datasetService = require("./dataset.service.js");
 import {
   inclusiveFilters,
   inclusiveOptions,
@@ -9,9 +23,27 @@ import {
   normalSearchText,
 } from './dataset.service.test.fixtures.js';
 
+beforeEach(() => {
+  vi.restoreAllMocks();
+
+  // Default mocked response shape expected by `dataset.service.search()`.
+  // (It reads `searchResults.hits.hits` and `searchResults.hits.total.value`.)
+  vi.spyOn(elasticsearch, "searchWithAggregations").mockResolvedValue({
+    hits: {
+      total: { value: 2 },
+      hits: [
+        { _source: { dataset_id: "DS1" }, highlight: {} },
+        { _source: { dataset_id: "DS2" }, highlight: {} },
+      ],
+    },
+    aggs: {},
+  });
+});
+
 describe('search', () => {
   it('should have a "data" key in the results object', async () => {
     const result = await datasetService.search(normalSearchText, normalFilters, normalOptions);
+    expect(elasticsearch.searchWithAggregations).toHaveBeenCalled();
     expect(result).toHaveProperty('data');
   });
 
