@@ -6,20 +6,49 @@ const queryGenerator = require('./queryGenerator');
 const cacheKeyGenerator = require('./cacheKeyGenerator');
 const utils = require('../Utils');
 
+const { DATASET_RETURN_FIELDS } = require('../Utils/datasetFields.js');
 const FACET_FILTERS = [
   'dataset_source_repo',
   'primary_disease',
 ]
 
 const search = async (searchText, filters, options) => {
+  let query = null;
   let result = {};
-  searchText = searchText.replace(/[^a-zA-Z0-9]+/g, ' '); // Ignore special characters
-  let searchableText = utils.getSearchableText(searchText);
+  let searchableText = null;
+
+  // Check searchText type
+  if (searchText && typeof searchText !== 'string') {
+    return result;
+  }
+
+  // Check filters type
+  if (filters && (typeof filters !== 'object' || Array.isArray(filters))) {
+    return result;
+  }
+
+  // Check options type
+  if (options && (typeof options !== 'object' || Array.isArray(options))) {
+    return result;
+  }
+
+  // Format the search text
+  if (searchText) {
+    const sanitizedSearchText = searchText.replace(/[^a-zA-Z0-9]+/g, ' '); // Ignore special characters
+    searchableText = utils.getSearchableText(sanitizedSearchText);
+  }
+
+  query = queryGenerator.getSearchQueryV2(searchableText, filters, options, DATASET_RETURN_FIELDS);
+
+  if (query == null) {
+    return result;
+  }
+
   if (false && searchableText !== "") {
     let aggregationKey = cacheKeyGenerator.getAggregationKey(searchableText);
     let aggregation = cache.getValue(aggregationKey);
     if (!aggregation) {
-      let query = queryGenerator.getSearchAggregationQuery(searchText);
+      let query = queryGenerator.getSearchAggregationQuery(searchableText);
       let searchResults = await elasticsearch.searchWithAggregations(config.indexDS, query);
       aggregation = searchResults.aggs.myAgg.buckets;
       //put in cache for 5 mins
@@ -31,35 +60,6 @@ const search = async (searchText, filters, options) => {
     result.aggs = 'all';
   }
   
-  const returnFields = [
-    // 'dataset_uuid',
-    'dataset_source_repo',
-    'dataset_title',
-    'description',
-    'dataset_source_id',
-    'dataset_source_url',
-    'PI_name',
-    // 'GPA',
-    'dataset_doc',
-    'dataset_pmid',
-    'funding_source',
-    'release_date',
-    'limitations_for_reuse',
-    'assay_method',
-    'study_type',
-    'primary_disease',
-    'participant_count',
-    'sample_count',
-    'study_links',
-    'related_genes',
-    'related_diseases',
-    'related_terms',
-    'dataset_year_enrollment_started',
-    'dataset_year_enrollment_ended',
-    'dataset_minimum_age_at_baseline',
-    'dataset_maximum_age_at_baseline'
-  ];
-  let query = queryGenerator.getSearchQueryV2(searchText, filters, options, returnFields);
   let searchResults = await elasticsearch.searchWithAggregations(config.indexDS, query);
   let datasets = searchResults.hits.hits.map((ds) => {
     if (ds.inner_hits) {
@@ -95,35 +95,7 @@ const search = async (searchText, filters, options) => {
 };
 
 const export2CSV = async (searchText, filters, options) => {
-  const returnFields = [
-    'dataset_uuid',
-    'dataset_source_repo',
-    'dataset_title',
-    'description',
-    'dataset_source_id',
-    'dataset_source_url',
-    'PI_name',
-    // 'GPA',
-    'dataset_doc',
-    'dataset_pmid',
-    'funding_source',
-    'release_date',
-    'limitations_for_reuse',
-    'assay_method',
-    'study_type',
-    'primary_disease',
-    'participant_count',
-    'sample_count',
-    'study_links',
-    'related_genes',
-    'related_diseases',
-    'related_terms',
-    'dataset_year_enrollment_started',
-    'dataset_year_enrollment_ended',
-    'dataset_minimum_age_at_baseline',
-    'dataset_maximum_age_at_baseline'
-  ];
-  const query = queryGenerator.getSearchQueryV2(searchText, filters, options, returnFields);
+  const query = queryGenerator.getSearchQueryV2(searchText, filters, options, DATASET_RETURN_FIELDS);
   const searchResults = await elasticsearch.search(config.indexDS, query);
   const datasets = searchResults.hits.map((dataset) => dataset._source);
 

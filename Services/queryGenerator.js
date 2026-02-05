@@ -1,34 +1,4 @@
-const { query } = require("winston");
-const config = require("../Config");
-const { values } = require("lodash");
-const DATASET_FIELDS = [
-  // 'dataset_uuid',
-  'dataset_title',
-  'description',
-  // 'dataset_maximum_age_at_baseline',
-  // 'dataset_minimum_age_at_baseline',
-  'dataset_source_id',
-  'dataset_source_repo',
-  'dataset_source_url',
-  // 'dataset_year_enrollment_ended',
-  // 'dataset_year_enrollment_started',
-  'PI_name',
-  // 'GPA',
-  'dataset_doc',
-  'dataset_pmid',
-  'funding_source',
-  // 'release_date',
-  'limitations_for_reuse',
-  'assay_method',
-  'study_type',
-  'primary_disease',
-  // 'participant_count',
-  // 'sample_count',
-  'study_links',
-  'related_genes',
-  'related_diseases',
-  'related_terms',
-];
+const { DATASET_SEARCH_FIELDS, DATASET_HIGHLIGHT_FIELDS } = require('../Utils/datasetFields.js');
 
 let queryGenerator = {};
 
@@ -150,6 +120,15 @@ queryGenerator.getSearchAggregationQuery = (searchText) => {
 };
 
 queryGenerator.getFiltersClause = (filters) => {
+  // Handle null or invalid parameter
+  if (
+    !filters ||
+    typeof filters !== 'object' ||
+    Array.isArray(filters)
+  ) {
+    return null;
+  }
+
   // Ignore filters with no values selected
   const cleanedFilters = Object.fromEntries(
     Object.entries(filters).filter(([field, values]) => values.length > 0)
@@ -169,7 +148,52 @@ queryGenerator.getFiltersClause = (filters) => {
   return clause;
 }
 
+queryGenerator.getHighlightClause = () => {
+  const fieldsMap = DATASET_HIGHLIGHT_FIELDS.reduce((acc, field) => {
+    acc[field] = { number_of_fragments: 0 };
+    return acc;
+  }, {});
+
+  return {
+    pre_tags: ["<b>"],
+    post_tags: ["</b>"],
+    fields: fieldsMap,
+  };
+};
+
+queryGenerator.getSortClause = (options) => {
+  // Handle null or wrong type
+  if (!options || typeof options !== 'object' || Array.isArray(options)) {
+    return null;
+  }
+
+  // Check whether a sort object exists
+  if (!options.sort || typeof options.sort !== 'object' || Array.isArray(options.sort)) {
+    return null;
+  }
+
+  // Check whether the sort object has a 'k' and 'v' property
+  if (!options.sort.k || !options.sort.v) {
+    return null;
+  }
+
+  // Check whether the sort property and direction are strings
+  if (typeof options.sort.k !== 'string' || typeof options.sort.v !== 'string') {
+    return null;
+  }
+
+  // Return the sort clause
+  return {
+    [options.sort.k]: options.sort.v,
+  };
+};
+
 queryGenerator.getTextSearchConditions = (searchText) => {
+  // Handle null parameter
+  if (!searchText || typeof searchText !== 'string') {
+    return null;
+  }
+
   const conditions = [];
   const searchTerms = searchText.trim().split(' ').map(
     term => term.trim()
@@ -180,12 +204,17 @@ queryGenerator.getTextSearchConditions = (searchText) => {
     return searchTerms.indexOf(term) === idx;
   });
 
+  // Check again that actual search terms exist
+  if (uniqueSearchTerms.length <= 0) {
+    return null;
+  }
+
   // Add a search condition for finding each term in any of the dataset fields
   uniqueSearchTerms.forEach((term) => {
     const dsl = {
       'multi_match': {
         'query': term,
-        'fields': DATASET_FIELDS.map((field) => `${field}.search`),
+        'fields': DATASET_SEARCH_FIELDS,
       }
     };
 
@@ -195,21 +224,69 @@ queryGenerator.getTextSearchConditions = (searchText) => {
   return conditions;
 };
 
+/**
+ * Constructs a search query for the datasets index
+ * @param {String} searchText The text to search for
+ * @param {Object} filters The filters to apply
+ * @param {Object} options Sort and pagination options
+ * @param {Array} returnFields The fields to return
+ * @returns {Object|null} The OpenSearch query body object, or null if validation fails.
+ */
 queryGenerator.getSearchQueryV2 = (searchText, filters, options, returnFields) => {
-  const body = {};
+  const body = {
+    from: 0,
+    size: 10,
+  };
   const compoundQuery = {
     'bool': {
-      'must': [],
     },
   };
-  const filtersClause = queryGenerator.getFiltersClause(filters);
-  const textSearchClause = queryGenerator.getTextSearchConditions(searchText);
+  let filtersClause;
+  let sortClause;
+  let textSearchClause;
 
-  body['_source'] = returnFields;
+  // Check searchText type
+  // Loose null equality treats undefined as null
+  if (searchText != null && typeof searchText !== 'string') {
+    return null;
+  }
 
+  // Check filters type
+  if (filters != null && (typeof filters !== 'object' || Array.isArray(filters))) {
+    return null;
+  }
+
+  // Check options type
+  if (options != null && (typeof options !== 'object' || Array.isArray(options))) {
+    return null;
+  }
+
+  // Check returnFields type and length
+  if (!Array.isArray(returnFields) || returnFields.length <= 0) {
+    return null;
+  }
+
+  filtersClause = queryGenerator.getFiltersClause(filters);
+  textSearchClause = queryGenerator.getTextSearchConditions(searchText);
+
+  body['_source'] = returnFields ?? false;
+
+  // We already verified that options is the right type if it's not null
+  // We must still verify that options is truthy
   if (options) {
-    body.size = options.pageInfo.pageSize;
-    body.from = (options.pageInfo.page - 1 ) * options.pageInfo.pageSize;
+    if (options.pageInfo?.pageSize > 0) {
+      body.size = options.pageInfo.pageSize;
+    }
+
+    if (options.pageInfo?.page > 0) {
+      body.from = body.size * (options.pageInfo.page - 1);
+    }
+  }
+
+  sortClause = queryGenerator.getSortClause(options);
+
+  if (sortClause != null) {
+    body.sort = [sortClause];
   }
 
   if (filtersClause != null) {
@@ -220,57 +297,12 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options, returnFields) =
     compoundQuery.bool.must = textSearchClause;
   }
 
-  if (compoundQuery.bool.must.length > 0 || compoundQuery.bool.filter) {
+  if (compoundQuery.bool.must?.length > 0 || compoundQuery.bool.filter) {
     body.query = compoundQuery;
   }
 
-  let agg = {};
-  agg.myAgg = {};
-  agg.myAgg.terms = {};
-  agg.myAgg.terms.field = "dbGaP_phs";
-  agg.myAgg.terms.size = 1000;
+  body.highlight = queryGenerator.getHighlightClause();
 
-  // body.aggs = agg;
-  // Add sort parameters
-  if (options?.sort) {
-    body.sort = []; // Initialize a list of sort clauses
-    const sortClause = {};
-    sortClause[options.sort.k] = options.sort.v; // In our API, "k" is the property name, and "v" is the direction
-    body.sort.push(sortClause);
-  }
-
-  body.highlight = {
-    pre_tags: ["<b>"],
-    post_tags: ["</b>"],
-    fields: {
-      // 'dataset_uuid': { number_of_fragments: 0 },
-      'dataset_title.search': { number_of_fragments: 0 },
-      'description.search': { number_of_fragments: 0 },
-      'dataset_maximum_age_at_baseline.search': { number_of_fragments: 0 },
-      'dataset_minimum_age_at_baseline.search': { number_of_fragments: 0 },
-      'dataset_source_id.search': { number_of_fragments: 0 },
-      'dataset_source_repo.search': { number_of_fragments: 0 },
-      'dataset_source_url.search': { number_of_fragments: 0 },
-      'dataset_year_enrollment_ended.search': { number_of_fragments: 0 },
-      'dataset_year_enrollment_started.search': { number_of_fragments: 0 },
-      'PI_name.search': { number_of_fragments: 0 },
-      // 'GPA': { number_of_fragments: 0 },
-      'dataset_doc.search': { number_of_fragments: 0 },
-      'dataset_pmid.search': { number_of_fragments: 0 },
-      'funding_source.search': { number_of_fragments: 0 },
-      // 'release_date': { number_of_fragments: 0 },
-      'limitations_for_reuse.search': { number_of_fragments: 0 },
-      'assay_method.search': { number_of_fragments: 0 },
-      'study_type.search': { number_of_fragments: 0 },
-      'primary_disease.search': { number_of_fragments: 0 },
-      // 'participant_count': { number_of_fragments: 0 },
-      // 'sample_count': { number_of_fragments: 0 },
-      'study_links.search': { number_of_fragments: 0 },
-      'related_genes.search': { number_of_fragments: 0 },
-      'related_diseases.search': { number_of_fragments: 0 },
-      'related_terms.search': { number_of_fragments: 0 },
-    },
-  };
   return body;
 };
 

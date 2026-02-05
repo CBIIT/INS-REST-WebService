@@ -30,6 +30,7 @@
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^4.0.15",
+    "rollup": "^4.55.1",
     "vitest": "^4.0.15"
   }
 }
