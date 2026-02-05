@@ -21,6 +21,7 @@ import {
   normalFilters,
   normalOptions,
   normalSearchText,
+  normalOpensearchResults,
 } from './dataset.service.test.fixtures.js';
 
 beforeEach(() => {
@@ -28,16 +29,7 @@ beforeEach(() => {
 
   // Default mocked response shape expected by `dataset.service.search()`.
   // (It reads `searchResults.hits.hits` and `searchResults.hits.total.value`.)
-  vi.spyOn(elasticsearch, "searchWithAggregations").mockResolvedValue({
-    hits: {
-      total: { value: 2 },
-      hits: [
-        { _source: { dataset_id: "DS1" }, highlight: {} },
-        { _source: { dataset_id: "DS2" }, highlight: {} },
-      ],
-    },
-    aggs: {},
-  });
+  vi.spyOn(elasticsearch, "searchWithAggregations").mockResolvedValue(normalOpensearchResults);
 });
 
 describe('search', () => {
