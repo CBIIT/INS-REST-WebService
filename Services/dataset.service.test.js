@@ -90,7 +90,8 @@ describe('search', () => {
     let result;
     error.body = errorOpensearchResults;
     vi.spyOn(elasticsearch, "searchWithAggregations").mockRejectedValue(error);
-    result = await datasetService.search();
+    result = await datasetService.search(normalSearchText, normalFilters, normalOptions);
+    expect(elasticsearch.searchWithAggregations).toHaveBeenCalled();
     expect(result).toHaveProperty('error');
     expect(result.error).toBeDefined();
   });
