@@ -94,7 +94,7 @@ const datasetFields = {
 };
 
 module.exports = {
-  DATASET_DEFAULT_SORT_FIELD: 'dataset_title_sort',
+  DATASET_DEFAULT_SORT_FIELD,
   DATASET_SEARCH_FIELDS,
   DATASET_HIGHLIGHT_FIELDS,
   DATASET_RETURN_FIELDS,
