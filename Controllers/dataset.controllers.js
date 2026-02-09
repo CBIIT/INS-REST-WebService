@@ -3,7 +3,7 @@ const cache = require('../Components/cache');
 const config = require('../Config');
 const path = require('path');
 const { Parser } = require('json2csv');
-const { datasetFields } = require('../Utils/datasetFields');
+const { DATASET_DEFAULT_SORT_FIELD, datasetFields } = require('../Utils/datasetFields');
 const datasetService = require('../Services/dataset.service');
 
 const search = async (req, res) => {
@@ -13,7 +13,7 @@ const search = async (req, res) => {
   const options = {};
   const pageInfo = body.pageInfo ?? {page: 1, pageSize: 10};
   const searchText = body.search_text?.trim() ?? '';
-  const sort = body.sort ?? {k: 'dbGaP_phs', v: 'asc'};
+  const sort = body.sort ?? {k: DATASET_DEFAULT_SORT_FIELD, v: 'asc'};
 
   if (pageInfo.page !== parseInt(pageInfo.page, 10) || pageInfo.page <= 0) {
     pageInfo.page = 1;
@@ -37,7 +37,7 @@ const search = async (req, res) => {
   //   sort.name = "Resource";
   //   sort.k = "data_resource_id";
   // }
-  if (!(sort.v && ['asc', 'desc'].includes(sort.v))) {
+  if (sort?.v && !['asc', 'desc'].includes(sort?.v)) {
     sort.v = 'asc';
   }
 
@@ -47,6 +47,15 @@ const search = async (req, res) => {
   data.pageInfo = options.pageInfo;
 
   const searchResult = await datasetService.search(searchText, filters, options);
+  if (searchResult.error) {
+    res.json({
+      status:"error",
+      aggs: 'all',
+      data: {},
+      error: searchResult.error,
+    });
+    return;
+  }
 
   if (searchResult.total !== 0 && (options.pageInfo.page - 1) * options.pageInfo.pageSize >= searchResult.total) {
     let lastPage = Math.ceil(searchResult.total / options.pageInfo.pageSize);

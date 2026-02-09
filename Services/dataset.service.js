@@ -1,6 +1,7 @@
 const config = require('../Config');
 const elasticsearch = require('../Components/elasticsearch');
 const cache = require('../Components/cache');
+const logger = require('../Components/logger');
 const mysql = require('../Components/mysql');
 const queryGenerator = require('./queryGenerator');
 const cacheKeyGenerator = require('./cacheKeyGenerator');
@@ -16,6 +17,7 @@ const search = async (searchText, filters, options) => {
   let query = null;
   let result = {};
   let searchableText = null;
+  let searchResults;
 
   // Check searchText type
   if (searchText && typeof searchText !== 'string') {
@@ -60,7 +62,14 @@ const search = async (searchText, filters, options) => {
     result.aggs = 'all';
   }
   
-  let searchResults = await elasticsearch.searchWithAggregations(config.indexDS, query);
+  try {
+    searchResults = await elasticsearch.searchWithAggregations(config.indexDS, query);
+  } catch (error) {
+    logger.error(`Error searching datasets: ${error}`);
+    return {
+      error: error?.body?.error?.root_cause ? JSON.stringify(error.body.error.root_cause).replace(/\\n/g, '') : error.message,
+    };
+  }
   let datasets = searchResults.hits.hits.map((ds) => {
     if (ds.inner_hits) {
       const terms = Object.keys(ds.inner_hits);
