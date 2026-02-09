@@ -37,7 +37,7 @@ const search = async (req, res) => {
   //   sort.name = "Resource";
   //   sort.k = "data_resource_id";
   // }
-  if (sort?.v && !['asc', 'desc'].includes(sort?.v)) {
+  if (!(sort?.v && ['asc', 'desc'].includes(sort.v))) {
     sort.v = 'asc';
   }
 
