@@ -70,6 +70,7 @@ const search = async (searchText, filters, options) => {
       error: error?.body?.error?.root_cause ? JSON.stringify(error.body.error.root_cause).replace(/\\n/g, '') : error.message,
     };
   }
+
   let datasets = searchResults.hits.hits.map((ds) => {
     if (ds.inner_hits) {
       const terms = Object.keys(ds.inner_hits);

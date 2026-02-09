@@ -180,3 +180,35 @@ export const normalOpensearchResults = {
   },
   aggs: undefined,
 };
+
+// Example of Opensearch response with error
+export const errorOpensearchResults = {
+  "error": {
+    "root_cause": [
+      {
+        "type": "query_shard_exception",
+        "reason": "No mapping found for [dbGaP_phs] in order to sort on",
+        "index": "datasets",
+        "index_uuid": "JHoru6szQ8G_-NtFJd--Bg"
+      }
+    ],
+    "type": "search_phase_execution_exception",
+    "reason": "all shards failed",
+    "phase": "query",
+    "grouped": true,
+    "failed_shards": [
+      {
+        "shard": 0,
+        "index": "datasets",
+        "node": "YzqehJMeSham0G7I2LQdmw",
+        "reason": {
+          "type": "query_shard_exception",
+          "reason": "No mapping found for [dbGaP_phs] in order to sort on",
+          "index": "datasets",
+          "index_uuid": "JHoru6szQ8G_-NtFJd--Bg"
+        }
+      }
+    ]
+  },
+  "status": 400
+};
