@@ -48,8 +48,8 @@ const search = async (req, res) => {
 
   const searchResult = await datasetService.search(searchText, filters, options);
   if (searchResult.error) {
-    res.json({
-      status:"error",
+    res.status(500).json({
+      status: "error",
       aggs: 'all',
       data: {},
       error: searchResult.error,
