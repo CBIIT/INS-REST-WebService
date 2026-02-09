@@ -9,10 +9,10 @@ const datasetService = require('../Services/dataset.service');
 const search = async (req, res) => {
   const body = req.body;
   const data = {};
-  const filters = body.filters ?? {};
+  const filters = body.filters && typeof body.filters === 'object' && !Array.isArray(body.filters) ? body.filters : {};
   const options = {};
   const pageInfo = body.pageInfo ?? {page: 1, pageSize: 10};
-  const searchText = body.search_text?.trim() ?? '';
+  const searchText = body.search_text && typeof body.search_text === 'string' ? body.search_text.trim() : '';
   const sort = body.sort ?? {k: DATASET_DEFAULT_SORT_FIELD, v: 'asc'};
 
   if (pageInfo.page !== parseInt(pageInfo.page, 10) || pageInfo.page <= 0) {
