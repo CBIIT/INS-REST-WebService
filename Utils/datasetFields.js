@@ -1,3 +1,4 @@
+const DATASET_DEFAULT_SORT_FIELD = 'dataset_title_sort';
 // Maps Dataset natural field names to property names
 const DATASET_SEARCH_FIELDS = [
   // 'dataset_uuid',
@@ -93,9 +94,9 @@ const datasetFields = {
 };
 
 module.exports = {
+  DATASET_DEFAULT_SORT_FIELD,
   DATASET_SEARCH_FIELDS,
   DATASET_HIGHLIGHT_FIELDS,
   DATASET_RETURN_FIELDS,
   datasetFields,
 };
-

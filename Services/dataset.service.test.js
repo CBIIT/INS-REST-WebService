@@ -22,6 +22,7 @@ import {
   normalOptions,
   normalSearchText,
   normalOpensearchResults,
+  errorOpensearchResults,
 } from './dataset.service.test.fixtures.js';
 
 beforeEach(() => {
@@ -82,5 +83,16 @@ describe('search', () => {
     const resultNull = await datasetService.search(normalSearchText, normalFilters, null);
     const resultEmpty = await datasetService.search(normalSearchText, normalFilters, {});
     expect(resultNull).toEqual(resultEmpty);
+  });
+
+  it('should handle Opensearch error response', async () => {
+    const error = new Error("Test Opensearch failure");
+    let result;
+    error.body = errorOpensearchResults;
+    vi.spyOn(elasticsearch, "searchWithAggregations").mockRejectedValue(error);
+    result = await datasetService.search(normalSearchText, normalFilters, normalOptions);
+    expect(elasticsearch.searchWithAggregations).toHaveBeenCalled();
+    expect(result).toHaveProperty('error');
+    expect(result.error).toBeDefined();
   });
 });

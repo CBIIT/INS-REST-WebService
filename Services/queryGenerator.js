@@ -343,7 +343,6 @@ queryGenerator.getDatasetFiltersQuery = (searchText, searchFilters, excludedFiel
   // Customize search query
   body.aggs = {};
   body.size = 0;
-  delete query.highlight;
 
   // Aggregate on the target field
   body.aggs[excludedField] = {
