@@ -4,16 +4,17 @@ const config = require('../Config');
 const path = require('path');
 const { Parser } = require('json2csv');
 const { DATASET_DEFAULT_SORT_FIELD, datasetFields } = require('../Utils/datasetFields');
+const { getObjectParam, getStringParam } = require('../Utils/params');
 const datasetService = require('../Services/dataset.service');
 
 const search = async (req, res) => {
-  const body = req.body;
+  const body = getObjectParam(req, 'body');
   const data = {};
-  const filters = body.filters && typeof body.filters === 'object' && !Array.isArray(body.filters) ? body.filters : {};
+  const filters = getObjectParam(body, 'filters');
   const options = {};
-  const pageInfo = body.pageInfo ?? {page: 1, pageSize: 10};
-  const searchText = body.search_text && typeof body.search_text === 'string' ? body.search_text.trim() : '';
-  const sort = body.sort ?? {k: DATASET_DEFAULT_SORT_FIELD, v: 'asc'};
+  const pageInfo = getObjectParam(body, 'pageInfo', {page: 1, pageSize: 10});
+  const searchText = getStringParam(body, 'search_text');
+  const sort = getObjectParam(body, 'sort', {k: DATASET_DEFAULT_SORT_FIELD, v: 'asc'});
 
   if (pageInfo.page !== parseInt(pageInfo.page, 10) || pageInfo.page <= 0) {
     pageInfo.page = 1;
@@ -47,6 +48,8 @@ const search = async (req, res) => {
   data.pageInfo = options.pageInfo;
 
   const searchResult = await datasetService.search(searchText, filters, options);
+
+  // Error response if there's an error
   if (searchResult.error) {
     res.status(500).json({
       status: "error",
@@ -128,11 +131,21 @@ const getById = async (req, res) => {
 };
 
 const getFilters = async (req, res) => {
-  const body = req.body;
-  const searchText = body.search_text?.trim() ?? '';
-  const searchFilters = body.filters ?? {};
+  const body = getObjectParam(req, 'body');
+  const searchText = getStringParam(body, 'search_text');
+  const searchFilters = getObjectParam(body, 'filters');
 
   const filters = await datasetService.getFilters(searchText, searchFilters);
+
+  // Error response if there's an error
+  if (filters.error) {
+    res.status(500).json({
+      status: "error",
+      data: {},
+      error: filters.error,
+    });
+    return;
+  }
 
   res.json({status: 'success', data: filters});
 };

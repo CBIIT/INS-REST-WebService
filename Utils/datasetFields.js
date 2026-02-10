@@ -100,4 +100,3 @@ module.exports = {
   DATASET_RETURN_FIELDS,
   datasetFields,
 };
-

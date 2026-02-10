@@ -6,7 +6,6 @@ const mysql = require('../Components/mysql');
 const queryGenerator = require('./queryGenerator');
 const cacheKeyGenerator = require('./cacheKeyGenerator');
 const utils = require('../Utils');
-
 const { DATASET_RETURN_FIELDS } = require('../Utils/datasetFields.js');
 const FACET_FILTERS = [
   'dataset_source_repo',
@@ -143,11 +142,36 @@ const getFilters = async (searchText, searchFilters) => {
 
   filters = {};
 
+  // Check searchText type
+  if (searchText && typeof searchText !== 'string') {
+    return filters;
+  }
+
+  // Check filters type
+  if (searchFilters && (typeof searchFilters !== 'object' || Array.isArray(searchFilters))) {
+    return filters;
+  }
+
+  // Format the search text
+  if (searchText) {
+    const sanitizedSearchText = searchText.replace(/[^a-zA-Z0-9]+/g, ' '); // Ignore special characters
+    searchableText = utils.getSearchableText(sanitizedSearchText);
+  }
+
   // Must obtain counts for each filter as if the filter were not applied
   await Promise.all(FACET_FILTERS.map(async (filterName) => {
     // Obtain counts from Opensearch
+    let filtersResponse;
     const query = queryGenerator.getDatasetFiltersQuery(searchText, searchFilters, filterName);
-    const filtersResponse = await elasticsearch.searchWithAggregations(config.indexDS, query);
+
+    try {
+      filtersResponse = await elasticsearch.searchWithAggregations(config.indexDS, query);
+    } catch (error) {
+      logger.error(`Error searching datasets: ${error}`);
+      return {
+        error: error?.body?.error?.root_cause ? JSON.stringify(error.body.error.root_cause).replace(/\\n/g, '') : error.message,
+      };
+    }
 
     // Extract counts from response
     filters[filterName] = filtersResponse.aggs[filterName].buckets.map((bucket) => ({
