@@ -1,5 +1,7 @@
+// Default sort field for dataset search
 const DATASET_DEFAULT_SORT_FIELD = 'dataset_title_sort';
-// Maps Dataset natural field names to property names
+
+// Dataset fields eligible for text search
 const DATASET_SEARCH_FIELDS = [
   // 'dataset_uuid',
   'dataset_source_repo.search',
@@ -33,7 +35,11 @@ const DATASET_SEARCH_FIELDS = [
   'related_diseases.search',
   'related_terms.search',
 ];
+
+// Fields to highlight in dataset search results
 const DATASET_HIGHLIGHT_FIELDS = DATASET_SEARCH_FIELDS;
+
+// Fields to return in dataset search results
 const DATASET_RETURN_FIELDS = [
   // 'dataset_uuid',
   'dataset_source_repo',
@@ -66,12 +72,19 @@ const DATASET_RETURN_FIELDS = [
   'related_diseases',
   'related_terms',
 ];
-const DATASET_SEARCH_RETURN_FIELDS = [
-  ...DATASET_RETURN_FIELDS.filter(str => ![
-    'description',
-  ].includes(str)),
-  'description_anchorless'
-];
+
+// Opensearch properties mapped to dataset search return fields
+const DATASET_SEARCH_RETURN_MAPPING = {
+  ...DATASET_RETURN_FIELDS.filter(field => ![ // Exclude some fields
+    'description'
+  ].includes(field)).reduce((acc, str) => ({ // By default, Opensearch property has same name as return field
+    ...acc,
+    [str]: str,
+  }), {}),
+  'description_anchorless': 'description', // Special fields are mapped here
+};
+
+// Map column names to properties for dataset CSV export
 const datasetFields = {
   'Dataset UUID': 'dataset_uuid',
   'Dataset Title': 'dataset_title',
@@ -105,6 +118,6 @@ module.exports = {
   DATASET_SEARCH_FIELDS,
   DATASET_HIGHLIGHT_FIELDS,
   DATASET_RETURN_FIELDS,
-  DATASET_SEARCH_RETURN_FIELDS,
+  DATASET_SEARCH_RETURN_MAPPING,
   datasetFields,
 };

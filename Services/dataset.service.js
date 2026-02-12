@@ -8,7 +8,7 @@ const cacheKeyGenerator = require('./cacheKeyGenerator');
 const utils = require('../Utils');
 const {
   DATASET_RETURN_FIELDS,
-  DATASET_SEARCH_RETURN_FIELDS
+  DATASET_SEARCH_RETURN_MAPPING
 } = require('../Utils/datasetFields.js');
 const FACET_FILTERS = [
   'dataset_source_repo',
@@ -42,7 +42,7 @@ const search = async (searchText, filters, options) => {
     searchableText = utils.getSearchableText(sanitizedSearchText);
   }
 
-  query = queryGenerator.getSearchQueryV2(searchableText, filters, options, DATASET_SEARCH_RETURN_FIELDS);
+  query = queryGenerator.getSearchQueryV2(searchableText, filters, options, Object.keys(DATASET_SEARCH_RETURN_MAPPING));
 
   if (query == null) {
     return result;
@@ -74,32 +74,46 @@ const search = async (searchText, filters, options) => {
   }
 
   let datasets = searchResults.hits.hits.map((ds) => {
-    if (ds.inner_hits) {
-      const terms = Object.keys(ds.inner_hits);
-      const additionalHitsDict = {};
-      if (terms.length > 0) {
-        terms.forEach((t) => {
-          ds.inner_hits[t].hits.hits.forEach((hit) => {
-            if (!additionalHitsDict[hit._nested.offset]) {
-              additionalHitsDict[hit._nested.offset] = {};
-              additionalHitsDict[hit._nested.offset].source = hit._source;
-              additionalHitsDict[hit._nested.offset].highlight = [];
-            }
-            additionalHitsDict[hit._nested.offset].highlight = additionalHitsDict[hit._nested.offset].highlight.concat(hit.highlight['additional.attr_set.k']);
-          });
-        });
-      }
-      const additionalHits = [];
-      for (let key in additionalHitsDict) {
-        const tmp = {};
-        tmp.content = additionalHitsDict[key].source;
-        tmp.highlight = {};
-        tmp.highlight['additional.attr_set.k'] = utils.consolidateHighlight(additionalHitsDict[key].highlight);
-        additionalHits.push(tmp);
-      }
-      return {content: ds._source, highlight: ds.highlight, additionalHits: additionalHits};
+    // const content = ds._source;
+    // const highlight = ds.highlight;
+
+    // Rename return fields and highlights according to mappings
+    const content = Object.keys(DATASET_SEARCH_RETURN_MAPPING).reduce((acc, key) => {
+      acc[DATASET_SEARCH_RETURN_MAPPING[key]] = ds._source[key];
+      return acc;
+    }, {});
+    const highlight = Object.keys(DATASET_SEARCH_RETURN_MAPPING).reduce((acc, key) => {
+      acc[DATASET_SEARCH_RETURN_MAPPING[key]] = ds.highlight[`${key}.search`];
+      return acc;
+    }, {});
+
+    if (!ds.inner_hits) {
+      return {content: content, highlight: highlight};
     }
-    return {content: ds._source, highlight: ds.highlight};
+
+    const terms = Object.keys(ds.inner_hits);
+    const additionalHitsDict = {};
+    if (terms.length > 0) {
+      terms.forEach((t) => {
+        ds.inner_hits[t].hits.hits.forEach((hit) => {
+          if (!additionalHitsDict[hit._nested.offset]) { // We currently don't use this code
+            additionalHitsDict[hit._nested.offset] = {};
+            additionalHitsDict[hit._nested.offset].source = hit._source;
+            additionalHitsDict[hit._nested.offset].highlight = [];
+          }
+          additionalHitsDict[hit._nested.offset].highlight = additionalHitsDict[hit._nested.offset].highlight.concat(hit.highlight['additional.attr_set.k']);
+        });
+      });
+    }
+    const additionalHits = [];
+    for (let key in additionalHitsDict) { // We currently don't use this code
+      const tmp = {};
+      tmp.content = additionalHitsDict[key].source;
+      tmp.highlight = {};
+      tmp.highlight['additional.attr_set.k'] = utils.consolidateHighlight(additionalHitsDict[key].highlight);
+      additionalHits.push(tmp);
+    }
+    return {content: content, highlight: highlight, additionalHits: additionalHits};
   });
   result.total = searchResults.hits.total.value;
   result.data = datasets;
