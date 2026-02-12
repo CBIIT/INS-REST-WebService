@@ -6,7 +6,10 @@ const mysql = require('../Components/mysql');
 const queryGenerator = require('./queryGenerator');
 const cacheKeyGenerator = require('./cacheKeyGenerator');
 const utils = require('../Utils');
-const { DATASET_RETURN_FIELDS } = require('../Utils/datasetFields.js');
+const {
+  DATASET_RETURN_FIELDS,
+  DATASET_SEARCH_RETURN_FIELDS
+} = require('../Utils/datasetFields.js');
 const FACET_FILTERS = [
   'dataset_source_repo',
   'primary_disease',
@@ -39,7 +42,7 @@ const search = async (searchText, filters, options) => {
     searchableText = utils.getSearchableText(sanitizedSearchText);
   }
 
-  query = queryGenerator.getSearchQueryV2(searchableText, filters, options, DATASET_RETURN_FIELDS);
+  query = queryGenerator.getSearchQueryV2(searchableText, filters, options, DATASET_SEARCH_RETURN_FIELDS);
 
   if (query == null) {
     return result;

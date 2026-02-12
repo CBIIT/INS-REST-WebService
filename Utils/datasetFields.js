@@ -4,7 +4,8 @@ const DATASET_SEARCH_FIELDS = [
   // 'dataset_uuid',
   'dataset_source_repo.search',
   'dataset_title.search',
-  'description.search',
+  // 'description.search',
+  'description_anchorless.search',
   'experimental_approaches.search',
   'dataset_source_id.search',
   'dataset_source_url.search',
@@ -65,6 +66,12 @@ const DATASET_RETURN_FIELDS = [
   'related_diseases',
   'related_terms',
 ];
+const DATASET_SEARCH_RETURN_FIELDS = [
+  ...DATASET_RETURN_FIELDS.filter(str => ![
+    'description',
+  ].includes(str)),
+  'description_anchorless'
+];
 const datasetFields = {
   'Dataset UUID': 'dataset_uuid',
   'Dataset Title': 'dataset_title',
@@ -98,5 +105,6 @@ module.exports = {
   DATASET_SEARCH_FIELDS,
   DATASET_HIGHLIGHT_FIELDS,
   DATASET_RETURN_FIELDS,
+  DATASET_SEARCH_RETURN_FIELDS,
   datasetFields,
 };
