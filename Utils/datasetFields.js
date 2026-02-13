@@ -73,10 +73,12 @@ const DATASET_RETURN_FIELDS = [
   'related_terms',
 ];
 
-// Opensearch properties mapped to dataset search return fields
+// Opensearch properties that need to be mapped to different return fields
 const DATASET_SEARCH_RETURN_MAPPING_EXCEPTIONS = {
   'description_anchorless': 'description',
-}
+};
+
+// Opensearch properties mapped to dataset search return fields
 const DATASET_SEARCH_RETURN_MAPPING = {
   ...DATASET_RETURN_FIELDS.filter(field => !Object.values(DATASET_SEARCH_RETURN_MAPPING_EXCEPTIONS).includes(field)) // Exclude some fields
   .reduce((acc, str) => ({ // By default, Opensearch property has same name as return field
