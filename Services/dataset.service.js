@@ -79,10 +79,18 @@ const search = async (searchText, filters, options) => {
 
     // Rename return fields and highlights according to mappings
     const content = Object.keys(DATASET_SEARCH_RETURN_MAPPING).reduce((acc, key) => {
+      if (!ds._source || !ds._source.hasOwnProperty(key)) {
+        return acc;
+      }
+
       acc[DATASET_SEARCH_RETURN_MAPPING[key]] = ds._source[key];
       return acc;
     }, {});
     const highlight = Object.keys(DATASET_SEARCH_RETURN_MAPPING).reduce((acc, key) => {
+      if (!ds.highlight || !ds.highlight.hasOwnProperty(`${key}.search`)) {
+        return acc;
+      }
+
       acc[DATASET_SEARCH_RETURN_MAPPING[key]] = ds.highlight[`${key}.search`];
       return acc;
     }, {});
