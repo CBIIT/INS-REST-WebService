@@ -74,14 +74,16 @@ const DATASET_RETURN_FIELDS = [
 ];
 
 // Opensearch properties mapped to dataset search return fields
+const DATASET_SEARCH_RETURN_MAPPING_EXCEPTIONS = {
+  'description_anchorless': 'description',
+}
 const DATASET_SEARCH_RETURN_MAPPING = {
-  ...DATASET_RETURN_FIELDS.filter(field => ![ // Exclude some fields
-    'description'
-  ].includes(field)).reduce((acc, str) => ({ // By default, Opensearch property has same name as return field
+  ...DATASET_RETURN_FIELDS.filter(field => !Object.values(DATASET_SEARCH_RETURN_MAPPING_EXCEPTIONS).includes(field)) // Exclude some fields
+  .reduce((acc, str) => ({ // By default, Opensearch property has same name as return field
     ...acc,
     [str]: str,
   }), {}),
-  'description_anchorless': 'description', // Special fields are mapped here
+  ...DATASET_SEARCH_RETURN_MAPPING_EXCEPTIONS, // Special fields are mapped here
 };
 
 // Map column names to properties for dataset CSV export
