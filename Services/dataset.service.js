@@ -87,7 +87,7 @@ const search = async (searchText, filters, options) => {
       return acc;
     }, {});
     const highlight = Object.keys(DATASET_SEARCH_RETURN_MAPPING).reduce((acc, key) => {
-      if (!ds.highlight || !ds.highlight.hasOwnProperty(key)) {
+      if (!ds.highlight || !ds.highlight.hasOwnProperty(`${key}.search`)) {
         return acc;
       }
 
