@@ -11,6 +11,7 @@ const DATASET_SEARCH_FIELDS = [
   'experimental_approaches.search',
   'dataset_source_id.search',
   'dataset_source_url.search',
+  'dataset_storage_distribution.search',
   'institute.search',
   'PI_name.search',
   // 'GPA',
@@ -48,6 +49,7 @@ const DATASET_RETURN_FIELDS = [
   'experimental_approaches',
   'dataset_source_id',
   'dataset_source_url',
+  'dataset_storage_distribution',
   'institute',
   'PI_name',
   // 'GPA',
@@ -97,6 +99,7 @@ const datasetFields = {
   'Dataset Source ID': 'dataset_source_id',
   'Dataset Source Repository': 'dataset_source_repo',
   'Dataset Source URL': 'dataset_source_url',
+  'Dataset Storage Distribution': 'dataset_storage_distribution',
   'Institute': 'institute',
   'Principal Investigator(s)': 'PI_name',
   // Specifically exclude GPA, because we don't display it anywhere
