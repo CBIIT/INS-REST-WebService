@@ -42,7 +42,7 @@ const DATASET_HIGHLIGHT_FIELDS = DATASET_SEARCH_FIELDS;
 
 // Fields to return in dataset search results
 const DATASET_RETURN_FIELDS = [
-  // 'dataset_uuid',
+  'dataset_uuid',
   'dataset_source_repo',
   'dataset_title',
   'description',

@@ -96,7 +96,14 @@ const search = async (searchText, filters, options) => {
     }, {});
 
     if (!ds.inner_hits) {
-      return {content: content, highlight: highlight};
+      return {
+        dataset_uuid: content.dataset_uuid,
+        content: (() => {
+          const { dataset_uuid, ...contentWithoutUuid } = content;
+          return contentWithoutUuid;
+        })(),
+        highlight: highlight
+      };
     }
 
     const terms = Object.keys(ds.inner_hits);
@@ -121,7 +128,16 @@ const search = async (searchText, filters, options) => {
       tmp.highlight['additional.attr_set.k'] = utils.consolidateHighlight(additionalHitsDict[key].highlight);
       additionalHits.push(tmp);
     }
-    return {content: content, highlight: highlight, additionalHits: additionalHits};
+
+    return {
+      dataset_uuid: content.dataset_uuid,
+      content: (() => {
+        const { dataset_uuid, ...contentWithoutUuid } = content;
+        return contentWithoutUuid;
+      })(),
+      highlight: highlight,
+      additionalHits: additionalHits
+    };
   });
   result.total = searchResults.hits.total.value;
   result.data = datasets;
