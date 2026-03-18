@@ -230,9 +230,13 @@ queryGenerator.getTextSearchConditions = (searchText) => {
  * @param {Object} filters The filters to apply
  * @param {Object} options Sort and pagination options
  * @param {Array} returnFields The fields to return
- * @returns {Object|null} The OpenSearch query body object, or null if validation fails.
+ * @returns {Object|null} The OpenSearch query body object, or a scroll request descriptor when deep pagination is required, or null if validation fails.
  */
 queryGenerator.getSearchQueryV2 = (searchText, filters, options, returnFields) => {
+  const MAX_RESULT_WINDOW = 10000;
+  const DEFAULT_SCROLL_KEEPALIVE = '2m';
+  const DEFAULT_SCROLL_BATCH_SIZE = 1000;
+
   const body = {
     from: 0,
     size: 10,
@@ -274,12 +278,14 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options, returnFields) =
   // We already verified that options is the right type if it's not null
   // We must still verify that options is truthy
   if (options) {
-    if (options.pageInfo?.pageSize > 0) {
-      body.size = options.pageInfo.pageSize;
+    const pageSize = Number(options.pageInfo?.pageSize);
+    if (Number.isFinite(pageSize) && pageSize > 0) {
+      body.size = Math.trunc(pageSize);
     }
 
-    if (options.pageInfo?.page > 0) {
-      body.from = body.size * (options.pageInfo.page - 1);
+    const page = Number(options.pageInfo?.page);
+    if (Number.isFinite(page) && page > 0) {
+      body.from = body.size * (Math.trunc(page) - 1);
     }
   }
 
@@ -303,7 +309,31 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options, returnFields) =
 
   body.highlight = queryGenerator.getHighlightClause();
 
-  return body;
+  const requestedFrom = Number(body.from ?? 0);
+  const requestedSize = Number(body.size ?? 10);
+  const safeRequestedFrom = Number.isFinite(requestedFrom) ? requestedFrom : 0;
+  const safeRequestedSize = Number.isFinite(requestedSize) ? requestedSize : 10;
+  const needsScroll = (safeRequestedFrom + safeRequestedSize) > MAX_RESULT_WINDOW;
+
+  if (!needsScroll) {
+    return body;
+  }
+
+  // Scroll requests should not rely on `from`/deep pagination; we fetch batches and discard until offset.
+  const scrollBody = {
+    ...body,
+    from: 0,
+    size: DEFAULT_SCROLL_BATCH_SIZE,
+  };
+
+  return {
+    useScroll: true,
+    scroll: DEFAULT_SCROLL_KEEPALIVE,
+    scrollBatchSize: DEFAULT_SCROLL_BATCH_SIZE,
+    requestedFrom: safeRequestedFrom,
+    requestedSize: safeRequestedSize,
+    body: scrollBody,
+  };
 };
 
 /**

@@ -133,4 +133,74 @@ describe('getSearchQueryV2', () => {
     );
     expect(resultNegative).toStrictEqual(normalOSQuery);
   });
+
+  it('should enable scroll for deep pagination past 10,000', () => { // 9
+    const deepOptions = {
+      ...normalOptions,
+      pageInfo: {
+        ...normalOptions.pageInfo,
+        page: "1001", // test numeric strings (as from query params)
+        pageSize: "10", // from = 10 * (1001 - 1) = 10000
+      },
+    };
+
+    const result = queryGenerator.getSearchQueryV2(
+      normalSearchText,
+      normalFilters,
+      deepOptions,
+      normalReturnFields
+    );
+
+    expect(result).toMatchObject({
+      useScroll: true,
+      requestedFrom: 10000,
+      requestedSize: 10,
+    });
+    expect(result.body).toBeTruthy();
+    expect(result.body.from).toBe(0);
+  });
+
+  it('should not enable scroll when the request ends at 10,000', () => { // 10
+    const optionsAtLimit = {
+      ...normalOptions,
+      pageInfo: {
+        ...normalOptions.pageInfo,
+        page: 1,
+        pageSize: 10000, // from=0, from+size = 10000 (no scroll)
+      },
+    };
+
+    const result = queryGenerator.getSearchQueryV2(
+      normalSearchText,
+      normalFilters,
+      optionsAtLimit,
+      normalReturnFields
+    );
+
+    expect(result?.useScroll).toBeUndefined();
+    expect(result.from).toBe(0);
+    expect(result.size).toBe(10000);
+  });
+
+  it('should not enable scroll for shallow pages when page params are strings', () => { // 11
+    const stringOptions = {
+      ...normalOptions,
+      pageInfo: {
+        ...normalOptions.pageInfo,
+        page: "11", // from = 10 * (11 - 1) = 100
+        pageSize: "10", // from + size = 110 (no scroll)
+      },
+    };
+
+    const result = queryGenerator.getSearchQueryV2(
+      normalSearchText,
+      normalFilters,
+      stringOptions,
+      normalReturnFields
+    );
+
+    expect(result?.useScroll).toBeUndefined();
+    expect(result.from).toBe(100);
+    expect(result.size).toBe(10);
+  });
 });
