@@ -95,13 +95,13 @@ const search = async (searchText, filters, options) => {
       return acc;
     }, {});
 
+    // Isolate dataset_uuid from the rest of the content
+    const { dataset_uuid, ...contentWithoutUuid } = content;
+
     if (!ds.inner_hits) {
       return {
-        dataset_uuid: content.dataset_uuid,
-        content: (() => {
-          const { dataset_uuid, ...contentWithoutUuid } = content;
-          return contentWithoutUuid;
-        })(),
+        dataset_uuid,
+        content: contentWithoutUuid,
         highlight: highlight
       };
     }
@@ -130,11 +130,8 @@ const search = async (searchText, filters, options) => {
     }
 
     return {
-      dataset_uuid: content.dataset_uuid,
-      content: (() => {
-        const { dataset_uuid, ...contentWithoutUuid } = content;
-        return contentWithoutUuid;
-      })(),
+      dataset_uuid,
+      content: contentWithoutUuid,
       highlight: highlight,
       additionalHits: additionalHits
     };
