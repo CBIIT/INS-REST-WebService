@@ -117,7 +117,7 @@ const export2CSV = async (req, res) => {
   options.pageInfo = pageInfo;
   options.sort = sort;
   const searchResult = await datasetService.export2CSV(searchText, filters, options);
-  const json2Csv = new Parser({ fields: csvFields });
+  const json2Csv = new Parser({ fields: csvFields, header: pageInfo.page <= 1 });
   const csv = json2Csv.parse(searchResult);
   res.header('Content-Type', 'text/csv');
   res.attachment('export.csv');
