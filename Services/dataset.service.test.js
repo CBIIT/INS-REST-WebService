@@ -31,6 +31,8 @@ beforeEach(() => {
   // Default mocked response shape expected by `dataset.service.search()`.
   // (It reads `searchResults.hits.hits` and `searchResults.hits.total.value`.)
   vi.spyOn(elasticsearch, "searchWithAggregations").mockResolvedValue(normalOpensearchResults);
+  // `dataset.service.search()` also calls `elasticsearch.count()`.
+  vi.spyOn(elasticsearch, "count").mockResolvedValue(normalOpensearchResults.hits.total.value);
 });
 
 describe('search', () => {

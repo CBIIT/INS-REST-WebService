@@ -4,7 +4,14 @@ const { DATASET_SEARCH_FIELDS } = require('../Utils/datasetFields.js');
 import { normalSearchText, normalFilters, normalReturnFields, normalOptions } from './queryGenerator.test.fixtures.js';
 
 // Opensearch
-import { normalOSQuery, oSHighlightClause } from './queryGenerator.test.fixtures.js';
+import {
+  normalOSQuery,
+  oSHighlightClause,
+  expectedScrollBody,
+  normalCountQuery,
+  filtersOnlyCountQuery,
+  searchOnlyCountQuery,
+} from './queryGenerator.test.fixtures.js';
 
 describe('getSearchQueryV2', () => {
   it('should handle undefined parameters', () => { // 1
@@ -132,5 +139,243 @@ describe('getSearchQueryV2', () => {
       normalReturnFields
     );
     expect(resultNegative).toStrictEqual(normalOSQuery);
+  });
+
+  it('should enable scroll for deep pagination past 10,000', () => { // 9
+    const deepOptions = {
+      ...normalOptions,
+      pageInfo: {
+        ...normalOptions.pageInfo,
+        page: "1001", // test numeric strings (as from query params)
+        pageSize: "10", // from = 10 * (1001 - 1) = 10000
+      },
+    };
+
+    const result = queryGenerator.getSearchQueryV2(
+      normalSearchText,
+      normalFilters,
+      deepOptions,
+      normalReturnFields
+    );
+
+    expect(result).toMatchObject({
+      useScroll: true,
+      requestedFrom: 10000,
+      requestedSize: 10,
+    });
+    expect(result.body).toBeTruthy();
+    expect(result.body.from).toBe(0);
+  });
+
+  it('should not enable scroll when the request ends at 10,000', () => { // 10
+    const optionsAtLimit = {
+      ...normalOptions,
+      pageInfo: {
+        ...normalOptions.pageInfo,
+        page: 1,
+        pageSize: 10000, // from=0, from+size = 10000 (no scroll)
+      },
+    };
+
+    const result = queryGenerator.getSearchQueryV2(
+      normalSearchText,
+      normalFilters,
+      optionsAtLimit,
+      normalReturnFields
+    );
+
+    expect(result?.useScroll).toBeUndefined();
+    expect(result.from).toBe(0);
+    expect(result.size).toBe(10000);
+  });
+
+  it('should not enable scroll for shallow pages when page params are strings', () => { // 11
+    const stringOptions = {
+      ...normalOptions,
+      pageInfo: {
+        ...normalOptions.pageInfo,
+        page: "11", // from = 10 * (11 - 1) = 100
+        pageSize: "10", // from + size = 110 (no scroll)
+      },
+    };
+
+    const result = queryGenerator.getSearchQueryV2(
+      normalSearchText,
+      normalFilters,
+      stringOptions,
+      normalReturnFields
+    );
+
+    expect(result?.useScroll).toBeUndefined();
+    expect(result.from).toBe(100);
+    expect(result.size).toBe(10);
+  });
+
+  it('should enable scroll when page size alone exceeds 10,000', () => { // 12
+    const largePageSizeOptions = {
+      ...normalOptions,
+      pageInfo: {
+        ...normalOptions.pageInfo,
+        page: 1,
+        pageSize: 10001, // from=0, from+size = 10001 (scroll)
+      },
+    };
+
+    const result = queryGenerator.getSearchQueryV2(
+      normalSearchText,
+      normalFilters,
+      largePageSizeOptions,
+      normalReturnFields
+    );
+
+    expect(result).toMatchObject({
+      useScroll: true,
+      scroll: '2m',
+      scrollBatchSize: 1000,
+      requestedFrom: 0,
+      requestedSize: 10001,
+    });
+    expect(result.body).toStrictEqual(expectedScrollBody);
+  });
+
+  it('should enable scroll when the computed offset goes beyond 10,000', () => { // 13
+    const deepOffsetOptions = {
+      ...normalOptions,
+      pageInfo: {
+        ...normalOptions.pageInfo,
+        page: 1002, // from = 10 * (1002 - 1) = 10010
+        pageSize: 10, // from + size = 10020 (scroll)
+      },
+    };
+
+    const result = queryGenerator.getSearchQueryV2(
+      normalSearchText,
+      normalFilters,
+      deepOffsetOptions,
+      normalReturnFields
+    );
+
+    expect(result).toMatchObject({
+      useScroll: true,
+      scroll: '2m',
+      scrollBatchSize: 1000,
+      requestedFrom: 10010,
+      requestedSize: 10,
+    });
+    expect(result.body).toStrictEqual(expectedScrollBody);
+  });
+
+  it('should not enable scroll when pageInfo is missing', () => { // 14
+    const optionsNoPageInfo = { ...normalOptions };
+    delete optionsNoPageInfo.pageInfo;
+
+    const result = queryGenerator.getSearchQueryV2(
+      normalSearchText,
+      normalFilters,
+      optionsNoPageInfo,
+      normalReturnFields
+    );
+
+    expect(result?.useScroll).toBeUndefined();
+    expect(result).toStrictEqual(normalOSQuery);
+  });
+
+  it('should not enable scroll when pageInfo values are non-numeric or non-finite', () => { // 15
+    const badPageInfoStrings = {
+      ...normalOptions,
+      pageInfo: {
+        page: 'foo',
+        pageSize: 'bar',
+      },
+    };
+    const badPageInfoInfinity = {
+      ...normalOptions,
+      pageInfo: {
+        page: 1,
+        pageSize: Infinity,
+      },
+    };
+
+    const resultStrings = queryGenerator.getSearchQueryV2(
+      normalSearchText,
+      normalFilters,
+      badPageInfoStrings,
+      normalReturnFields
+    );
+    expect(resultStrings?.useScroll).toBeUndefined();
+    expect(resultStrings).toStrictEqual(normalOSQuery);
+
+    const resultInfinity = queryGenerator.getSearchQueryV2(
+      normalSearchText,
+      normalFilters,
+      badPageInfoInfinity,
+      normalReturnFields
+    );
+    expect(resultInfinity?.useScroll).toBeUndefined();
+    expect(resultInfinity).toStrictEqual(normalOSQuery);
+  });
+
+  it('should enable scroll when page 2 with size 10,000 is requested', () => { // 16
+    const pageTwoAtMaxSize = {
+      ...normalOptions,
+      pageInfo: {
+        ...normalOptions.pageInfo,
+        page: 2, // from = 10000
+        pageSize: 10000, // from + size = 20000 (scroll)
+      },
+    };
+
+    const result = queryGenerator.getSearchQueryV2(
+      normalSearchText,
+      normalFilters,
+      pageTwoAtMaxSize,
+      normalReturnFields
+    );
+
+    expect(result).toMatchObject({
+      useScroll: true,
+      requestedFrom: 10000,
+      requestedSize: 10000,
+    });
+    expect(result.body).toStrictEqual(expectedScrollBody);
+  });
+});
+
+describe('getDatasetCountQuery', () => {
+  it('should return a count query with both search and filters', () => { // 1
+    const result = queryGenerator.getDatasetCountQuery(normalSearchText, normalFilters);
+    expect(result).toStrictEqual(normalCountQuery);
+  });
+
+  it('should return an empty body when no search text and no filters are provided', () => { // 2
+    const resultUndefined = queryGenerator.getDatasetCountQuery(undefined, undefined);
+    expect(resultUndefined).toStrictEqual({});
+
+    const resultEmpty = queryGenerator.getDatasetCountQuery('   ', {});
+    expect(resultEmpty).toStrictEqual({});
+  });
+
+  it('should return a filter-only count query when searchText has no terms', () => { // 3
+    const result = queryGenerator.getDatasetCountQuery('   ', normalFilters);
+    expect(result).toStrictEqual(filtersOnlyCountQuery);
+  });
+
+  it('should return a search-only count query when filters are empty or have no values', () => { // 4
+    const resultEmptyObj = queryGenerator.getDatasetCountQuery(normalSearchText, {});
+    expect(resultEmptyObj).toStrictEqual(searchOnlyCountQuery);
+
+    const resultEmptyValues = queryGenerator.getDatasetCountQuery(normalSearchText, {
+      primary_disease: [],
+      dataset_source_repo: [],
+    });
+    expect(resultEmptyValues).toStrictEqual(searchOnlyCountQuery);
+  });
+
+  it('should ignore invalid filter types and not throw', () => { // 5
+    const result = queryGenerator.getDatasetCountQuery(normalSearchText, 'not an object');
+    expect(result).toStrictEqual(searchOnlyCountQuery);
+
+    const resultArray = queryGenerator.getDatasetCountQuery(normalSearchText, ['a', 'b']);
+    expect(resultArray).toStrictEqual(searchOnlyCountQuery);
   });
 });
