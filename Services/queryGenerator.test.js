@@ -4,7 +4,14 @@ const { DATASET_SEARCH_FIELDS } = require('../Utils/datasetFields.js');
 import { normalSearchText, normalFilters, normalReturnFields, normalOptions } from './queryGenerator.test.fixtures.js';
 
 // Opensearch
-import { normalOSQuery, oSHighlightClause, expectedScrollBody } from './queryGenerator.test.fixtures.js';
+import {
+  normalOSQuery,
+  oSHighlightClause,
+  expectedScrollBody,
+  normalCountQuery,
+  filtersOnlyCountQuery,
+  searchOnlyCountQuery,
+} from './queryGenerator.test.fixtures.js';
 
 describe('getSearchQueryV2', () => {
   it('should handle undefined parameters', () => { // 1
@@ -331,5 +338,44 @@ describe('getSearchQueryV2', () => {
       requestedSize: 10000,
     });
     expect(result.body).toStrictEqual(expectedScrollBody);
+  });
+});
+
+describe('getDatasetCountQuery', () => {
+  it('should return a count query with both search and filters', () => { // 1
+    const result = queryGenerator.getDatasetCountQuery(normalSearchText, normalFilters);
+    expect(result).toStrictEqual(normalCountQuery);
+  });
+
+  it('should return an empty body when no search text and no filters are provided', () => { // 2
+    const resultUndefined = queryGenerator.getDatasetCountQuery(undefined, undefined);
+    expect(resultUndefined).toStrictEqual({});
+
+    const resultEmpty = queryGenerator.getDatasetCountQuery('   ', {});
+    expect(resultEmpty).toStrictEqual({});
+  });
+
+  it('should return a filter-only count query when searchText has no terms', () => { // 3
+    const result = queryGenerator.getDatasetCountQuery('   ', normalFilters);
+    expect(result).toStrictEqual(filtersOnlyCountQuery);
+  });
+
+  it('should return a search-only count query when filters are empty or have no values', () => { // 4
+    const resultEmptyObj = queryGenerator.getDatasetCountQuery(normalSearchText, {});
+    expect(resultEmptyObj).toStrictEqual(searchOnlyCountQuery);
+
+    const resultEmptyValues = queryGenerator.getDatasetCountQuery(normalSearchText, {
+      primary_disease: [],
+      dataset_source_repo: [],
+    });
+    expect(resultEmptyValues).toStrictEqual(searchOnlyCountQuery);
+  });
+
+  it('should ignore invalid filter types and not throw', () => { // 5
+    const result = queryGenerator.getDatasetCountQuery(normalSearchText, 'not an object');
+    expect(result).toStrictEqual(searchOnlyCountQuery);
+
+    const resultArray = queryGenerator.getDatasetCountQuery(normalSearchText, ['a', 'b']);
+    expect(resultArray).toStrictEqual(searchOnlyCountQuery);
   });
 });

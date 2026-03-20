@@ -84,3 +84,24 @@ export const expectedScrollBody = {
   from: 0,
   size: 1000,
 };
+
+export const normalCountQuery = {
+  query: normalOSQuery.query,
+};
+
+export const filtersOnlyCountQuery = {
+  query: {
+    bool: {
+      must: [],
+      filter: normalOSQuery.query.bool.filter,
+    },
+  },
+};
+
+export const searchOnlyCountQuery = {
+  query: {
+    bool: {
+      must: normalOSQuery.query.bool.must,
+    },
+  },
+};
