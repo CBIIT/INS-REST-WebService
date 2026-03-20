@@ -78,3 +78,9 @@ export const normalOSQuery = {
   ],
   highlight: oSHighlightClause,
 };
+
+export const expectedScrollBody = {
+  ...normalOSQuery,
+  from: 0,
+  size: 1000,
+};

@@ -4,7 +4,7 @@ const { DATASET_SEARCH_FIELDS } = require('../Utils/datasetFields.js');
 import { normalSearchText, normalFilters, normalReturnFields, normalOptions } from './queryGenerator.test.fixtures.js';
 
 // Opensearch
-import { normalOSQuery, oSHighlightClause } from './queryGenerator.test.fixtures.js';
+import { normalOSQuery, oSHighlightClause, expectedScrollBody } from './queryGenerator.test.fixtures.js';
 
 describe('getSearchQueryV2', () => {
   it('should handle undefined parameters', () => { // 1
@@ -202,5 +202,134 @@ describe('getSearchQueryV2', () => {
     expect(result?.useScroll).toBeUndefined();
     expect(result.from).toBe(100);
     expect(result.size).toBe(10);
+  });
+
+  it('should enable scroll when page size alone exceeds 10,000', () => { // 12
+    const largePageSizeOptions = {
+      ...normalOptions,
+      pageInfo: {
+        ...normalOptions.pageInfo,
+        page: 1,
+        pageSize: 10001, // from=0, from+size = 10001 (scroll)
+      },
+    };
+
+    const result = queryGenerator.getSearchQueryV2(
+      normalSearchText,
+      normalFilters,
+      largePageSizeOptions,
+      normalReturnFields
+    );
+
+    expect(result).toMatchObject({
+      useScroll: true,
+      scroll: '2m',
+      scrollBatchSize: 1000,
+      requestedFrom: 0,
+      requestedSize: 10001,
+    });
+    expect(result.body).toStrictEqual(expectedScrollBody);
+  });
+
+  it('should enable scroll when the computed offset goes beyond 10,000', () => { // 13
+    const deepOffsetOptions = {
+      ...normalOptions,
+      pageInfo: {
+        ...normalOptions.pageInfo,
+        page: 1002, // from = 10 * (1002 - 1) = 10010
+        pageSize: 10, // from + size = 10020 (scroll)
+      },
+    };
+
+    const result = queryGenerator.getSearchQueryV2(
+      normalSearchText,
+      normalFilters,
+      deepOffsetOptions,
+      normalReturnFields
+    );
+
+    expect(result).toMatchObject({
+      useScroll: true,
+      scroll: '2m',
+      scrollBatchSize: 1000,
+      requestedFrom: 10010,
+      requestedSize: 10,
+    });
+    expect(result.body).toStrictEqual(expectedScrollBody);
+  });
+
+  it('should not enable scroll when pageInfo is missing', () => { // 14
+    const optionsNoPageInfo = { ...normalOptions };
+    delete optionsNoPageInfo.pageInfo;
+
+    const result = queryGenerator.getSearchQueryV2(
+      normalSearchText,
+      normalFilters,
+      optionsNoPageInfo,
+      normalReturnFields
+    );
+
+    expect(result?.useScroll).toBeUndefined();
+    expect(result).toStrictEqual(normalOSQuery);
+  });
+
+  it('should not enable scroll when pageInfo values are non-numeric or non-finite', () => { // 15
+    const badPageInfoStrings = {
+      ...normalOptions,
+      pageInfo: {
+        page: 'foo',
+        pageSize: 'bar',
+      },
+    };
+    const badPageInfoInfinity = {
+      ...normalOptions,
+      pageInfo: {
+        page: 1,
+        pageSize: Infinity,
+      },
+    };
+
+    const resultStrings = queryGenerator.getSearchQueryV2(
+      normalSearchText,
+      normalFilters,
+      badPageInfoStrings,
+      normalReturnFields
+    );
+    expect(resultStrings?.useScroll).toBeUndefined();
+    expect(resultStrings).toStrictEqual(normalOSQuery);
+
+    const resultInfinity = queryGenerator.getSearchQueryV2(
+      normalSearchText,
+      normalFilters,
+      badPageInfoInfinity,
+      normalReturnFields
+    );
+    expect(resultInfinity?.useScroll).toBeUndefined();
+    expect(resultInfinity).toStrictEqual(normalOSQuery);
+  });
+
+  it('should enable scroll when page 2 with size 10,000 is requested', () => { // 16
+    const pageTwoAtMaxSize = {
+      ...normalOptions,
+      pageInfo: {
+        ...normalOptions.pageInfo,
+        page: 2, // from = 10000
+        pageSize: 10000, // from + size = 20000 (scroll)
+      },
+    };
+
+    const result = queryGenerator.getSearchQueryV2(
+      normalSearchText,
+      normalFilters,
+      pageTwoAtMaxSize,
+      normalReturnFields
+    );
+
+    expect(result).toMatchObject({
+      useScroll: true,
+      requestedFrom: 10000,
+      requestedSize: 10000,
+    });
+    expect(result.body).toStrictEqual(expectedScrollBody);
   });
 });
