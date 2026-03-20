@@ -7,7 +7,7 @@ import { normalSearchText, normalFilters, normalReturnFields, normalOptions } fr
 import {
   normalOSQuery,
   oSHighlightClause,
-  expectedScrollBody,
+  makeExpectedScrollBody,
   normalCountQuery,
   filtersOnlyCountQuery,
   searchOnlyCountQuery,
@@ -165,6 +165,7 @@ describe('getSearchQueryV2', () => {
     });
     expect(result.body).toBeTruthy();
     expect(result.body.from).toBe(0);
+    expect(result.body).toStrictEqual(makeExpectedScrollBody(10));
   });
 
   it('should not enable scroll when the request ends at 10,000', () => { // 10
@@ -231,11 +232,10 @@ describe('getSearchQueryV2', () => {
     expect(result).toMatchObject({
       useScroll: true,
       scroll: '2m',
-      scrollBatchSize: 1000,
       requestedFrom: 0,
       requestedSize: 10001,
     });
-    expect(result.body).toStrictEqual(expectedScrollBody);
+    expect(result.body).toStrictEqual(makeExpectedScrollBody(10001));
   });
 
   it('should enable scroll when the computed offset goes beyond 10,000', () => { // 13
@@ -258,11 +258,10 @@ describe('getSearchQueryV2', () => {
     expect(result).toMatchObject({
       useScroll: true,
       scroll: '2m',
-      scrollBatchSize: 1000,
       requestedFrom: 10010,
       requestedSize: 10,
     });
-    expect(result.body).toStrictEqual(expectedScrollBody);
+    expect(result.body).toStrictEqual(makeExpectedScrollBody(10));
   });
 
   it('should not enable scroll when pageInfo is missing', () => { // 14
@@ -337,7 +336,7 @@ describe('getSearchQueryV2', () => {
       requestedFrom: 10000,
       requestedSize: 10000,
     });
-    expect(result.body).toStrictEqual(expectedScrollBody);
+    expect(result.body).toStrictEqual(makeExpectedScrollBody(10000));
   });
 });
 
