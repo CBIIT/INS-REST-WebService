@@ -131,3 +131,20 @@ const searchWithAggregations = async (searchIndex, query) => {
 };
 
 exports.searchWithAggregations = searchWithAggregations;
+/**
+ * Retrieves the count of documents matching the query from Opensearch.
+ *
+ * @param {string} searchIndex - The name of the Opensearch index.
+ * @param {Object} [query={}] - The query object for filtering documents.
+ * @returns {Promise<number>} The count of matching documents.
+ */
+
+const count = async (searchIndex, query = {}) => {
+  const result = await esClient.count({
+    index: searchIndex,
+    body: query
+  });
+  return result.body.count;
+};
+
+exports.count = count;

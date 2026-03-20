@@ -387,6 +387,39 @@ queryGenerator.getDatasetFiltersQuery = (searchText, searchFilters, excludedFiel
 
   return body;
 };
+/**
+ * Generates a count query for Opensearch using the same filters as getSearchQueryV2 and getDatasetFiltersQuery.
+ * @param {String} searchText The text to search for
+ * @param {Object} searchFilters The filters to apply
+ * @returns {Object} Opensearch count query
+ */
+queryGenerator.getDatasetCountQuery = (searchText, searchFilters) => {
+  const body = {};
+
+  // Build the main compound query using existing query logic
+  const compoundQuery = {
+    'bool': {
+      'must': [],
+    },
+  };
+
+  const filtersClause = queryGenerator.getFiltersClause(searchFilters);
+  const textSearchClause = queryGenerator.getTextSearchConditions(searchText);
+
+  if (filtersClause != null) {
+    compoundQuery.bool['filter'] = filtersClause;
+  }
+
+  if (textSearchClause != null) {
+    compoundQuery.bool.must = textSearchClause;
+  }
+
+  if (compoundQuery.bool.must.length > 0 || compoundQuery.bool.filter) {
+    body.query = compoundQuery;
+  }
+
+  return body;
+};
 
 queryGenerator.getParticipatingResourcesSearchQuery = (filters, options) => {
   let query = {};
