@@ -137,7 +137,7 @@ const search = async (searchText, filters, options) => {
     };
   });
 
-  const countQuery = queryGenerator.getDatasetCountQuery(searchText, filters, options);
+  const countQuery = queryGenerator.getDatasetCountQuery(searchableText, filters, options);
   const countResult = await elasticsearch.count(config.indexDS, countQuery);
   result.total = countResult;
   result.data = datasets;

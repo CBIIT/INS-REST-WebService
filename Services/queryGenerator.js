@@ -235,7 +235,6 @@ queryGenerator.getTextSearchConditions = (searchText) => {
 queryGenerator.getSearchQueryV2 = (searchText, filters, options, returnFields) => {
   const MAX_RESULT_WINDOW = 10000;
   const DEFAULT_SCROLL_KEEPALIVE = '2m';
-  const DEFAULT_SCROLL_BATCH_SIZE = 1000;
 
   const body = {
     from: 0,
@@ -323,13 +322,11 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options, returnFields) =
   const scrollBody = {
     ...body,
     from: 0,
-    size: DEFAULT_SCROLL_BATCH_SIZE,
   };
 
   return {
     useScroll: true,
     scroll: DEFAULT_SCROLL_KEEPALIVE,
-    scrollBatchSize: DEFAULT_SCROLL_BATCH_SIZE,
     requestedFrom: safeRequestedFrom,
     requestedSize: safeRequestedSize,
     body: scrollBody,
