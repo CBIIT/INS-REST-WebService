@@ -79,11 +79,11 @@ export const normalOSQuery = {
   highlight: oSHighlightClause,
 };
 
-export const expectedScrollBody = {
+export const makeExpectedScrollBody = (requestedSize) => ({
   ...normalOSQuery,
   from: 0,
-  size: 1000,
-};
+  size: requestedSize,
+});
 
 export const normalCountQuery = {
   query: normalOSQuery.query,
