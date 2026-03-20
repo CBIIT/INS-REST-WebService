@@ -77,16 +77,16 @@ const search = async (req, res) => {
 };
 
 const export2CSV = async (req, res) => {
-  const body = req.body;
+  const body = getObjectParam(req, 'body');
   const csvFields = Object.entries(datasetFields).map(([naturalName, propertyName]) => ({
     label: naturalName,
     value: propertyName,
   }));
-  const filters = body.filters ?? {};
+  const filters = getObjectParam(body, 'filters');
   const options = {};
-  const pageInfo = {page: 1, pageSize: 10000};
-  const searchText = body.search_text?.trim() ?? '';
-  const sort = body.sort ?? {k: 'dataset_title', v: 'asc'};
+  const pageInfo = getObjectParam(body, 'pageInfo', { page: 1, pageSize: 10000 });
+  const searchText = getStringParam(body, 'search_text')?.trim() ?? '';
+  const sort = getObjectParam(body, 'sort', { k: 'dataset_title', v: 'asc' });
 
   if (pageInfo.page !== parseInt(pageInfo.page, 10) || pageInfo.page <= 0) {
     pageInfo.page = 1;
