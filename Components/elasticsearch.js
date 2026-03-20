@@ -29,11 +29,11 @@ const searchPageWithScroll = async (searchIndex, scrollQuery) => {
   const requestedFrom = Math.max(0, scrollQuery.requestedFrom ?? 0);
   const requestedSize = Math.max(0, scrollQuery.requestedSize ?? 10);
   const scroll = scrollQuery.scroll ?? '2m';
-  const batchSize = Math.max(1, Math.min(scrollQuery.scrollBatchSize ?? 1000, 10000));
+  const batchSize = 10000;
   const body = {
     ...(scrollQuery.body ?? {}),
     from: 0,
-    size: Math.max(1, Math.min((scrollQuery.body?.size ?? batchSize), batchSize)),
+    size: batchSize,
   };
 
   let scrollId;
@@ -43,15 +43,28 @@ const searchPageWithScroll = async (searchIndex, scrollQuery) => {
   const pageHits = [];
 
   const takeFromBatch = (batch) => {
-    for (const hit of batch) {
-      if (seen >= requestedFrom && pageHits.length < requestedSize) {
-        pageHits.push(hit);
-      }
-      seen += 1;
-      if (pageHits.length >= requestedSize) {
-        return;
-      }
+    if (!batch || batch.length <= 0 || pageHits.length >= requestedSize) {
+      seen += batch?.length ?? 0;
+      return;
     }
+
+    const batchEnd = seen + batch.length;
+    if (batchEnd <= requestedFrom) {
+      // Skip entire batch before we reach the requested window.
+      seen = batchEnd;
+      return;
+    }
+
+    const startInBatch = Math.max(0, requestedFrom - seen);
+    const remaining = requestedSize - pageHits.length;
+    const endInBatch = Math.min(batch.length, startInBatch + remaining);
+
+    if (endInBatch > startInBatch) {
+      pageHits.push(...batch.slice(startInBatch, endInBatch));
+    }
+
+    // We've consumed this entire batch from the scroll stream.
+    seen = batchEnd;
   };
 
   try {
