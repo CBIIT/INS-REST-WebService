@@ -1,25 +1,58 @@
 const config = require('../Config');
 const elasticsearch = require('../Components/elasticsearch');
 const cache = require('../Components/cache');
+const logger = require('../Components/logger');
 const mysql = require('../Components/mysql');
 const queryGenerator = require('./queryGenerator');
 const cacheKeyGenerator = require('./cacheKeyGenerator');
 const utils = require('../Utils');
-
+const {
+  DATASET_RETURN_FIELDS,
+  DATASET_SEARCH_RETURN_MAPPING
+} = require('../Utils/datasetFields.js');
 const FACET_FILTERS = [
   'dataset_source_repo',
   'primary_disease',
 ]
 
 const search = async (searchText, filters, options) => {
+  let query = null;
   let result = {};
-  searchText = searchText.replace(/[^a-zA-Z0-9]+/g, ' '); // Ignore special characters
-  let searchableText = utils.getSearchableText(searchText);
+  let searchableText = null;
+  let searchResults;
+
+  // Check searchText type
+  if (searchText && typeof searchText !== 'string') {
+    return result;
+  }
+
+  // Check filters type
+  if (filters && (typeof filters !== 'object' || Array.isArray(filters))) {
+    return result;
+  }
+
+  // Check options type
+  if (options && (typeof options !== 'object' || Array.isArray(options))) {
+    return result;
+  }
+
+  // Format the search text
+  if (searchText) {
+    const sanitizedSearchText = searchText.replace(/[^a-zA-Z0-9]+/g, ' '); // Ignore special characters
+    searchableText = utils.getSearchableText(sanitizedSearchText);
+  }
+
+  query = queryGenerator.getSearchQueryV2(searchableText, filters, options, Object.keys(DATASET_SEARCH_RETURN_MAPPING));
+
+  if (query == null) {
+    return result;
+  }
+
   if (false && searchableText !== "") {
     let aggregationKey = cacheKeyGenerator.getAggregationKey(searchableText);
     let aggregation = cache.getValue(aggregationKey);
     if (!aggregation) {
-      let query = queryGenerator.getSearchAggregationQuery(searchText);
+      let query = queryGenerator.getSearchAggregationQuery(searchableText);
       let searchResults = await elasticsearch.searchWithAggregations(config.indexDS, query);
       aggregation = searchResults.aggs.myAgg.buckets;
       //put in cache for 5 mins
@@ -31,99 +64,88 @@ const search = async (searchText, filters, options) => {
     result.aggs = 'all';
   }
   
-  const returnFields = [
-    // 'dataset_uuid',
-    'dataset_source_repo',
-    'dataset_title',
-    'description',
-    'dataset_source_id',
-    'dataset_source_url',
-    'PI_name',
-    // 'GPA',
-    'dataset_doc',
-    'dataset_pmid',
-    'funding_source',
-    'release_date',
-    'limitations_for_reuse',
-    'assay_method',
-    'study_type',
-    'primary_disease',
-    'participant_count',
-    'sample_count',
-    'study_links',
-    'related_genes',
-    'related_diseases',
-    'related_terms',
-    'dataset_year_enrollment_started',
-    'dataset_year_enrollment_ended',
-    'dataset_minimum_age_at_baseline',
-    'dataset_maximum_age_at_baseline'
-  ];
-  let query = queryGenerator.getSearchQueryV2(searchText, filters, options, returnFields);
-  let searchResults = await elasticsearch.searchWithAggregations(config.indexDS, query);
+  try {
+    searchResults = await elasticsearch.searchWithAggregations(config.indexDS, query);
+  } catch (error) {
+    logger.error(`Error searching datasets: ${error}`);
+    return {
+      error: error?.body?.error?.root_cause ? JSON.stringify(error.body.error.root_cause).replace(/\\n/g, '') : error.message,
+    };
+  }
+
   let datasets = searchResults.hits.hits.map((ds) => {
-    if (ds.inner_hits) {
-      const terms = Object.keys(ds.inner_hits);
-      const additionalHitsDict = {};
-      if (terms.length > 0) {
-        terms.forEach((t) => {
-          ds.inner_hits[t].hits.hits.forEach((hit) => {
-            if (!additionalHitsDict[hit._nested.offset]) {
-              additionalHitsDict[hit._nested.offset] = {};
-              additionalHitsDict[hit._nested.offset].source = hit._source;
-              additionalHitsDict[hit._nested.offset].highlight = [];
-            }
-            additionalHitsDict[hit._nested.offset].highlight = additionalHitsDict[hit._nested.offset].highlight.concat(hit.highlight['additional.attr_set.k']);
-          });
-        });
+    // const content = ds._source;
+    // const highlight = ds.highlight;
+
+    // Rename return fields and highlights according to mappings
+    const content = Object.keys(DATASET_SEARCH_RETURN_MAPPING).reduce((acc, key) => {
+      if (!ds._source || !ds._source.hasOwnProperty(key)) {
+        return acc;
       }
-      const additionalHits = [];
-      for (let key in additionalHitsDict) {
-        const tmp = {};
-        tmp.content = additionalHitsDict[key].source;
-        tmp.highlight = {};
-        tmp.highlight['additional.attr_set.k'] = utils.consolidateHighlight(additionalHitsDict[key].highlight);
-        additionalHits.push(tmp);
+
+      acc[DATASET_SEARCH_RETURN_MAPPING[key]] = ds._source[key];
+      return acc;
+    }, {});
+    const highlight = Object.keys(DATASET_SEARCH_RETURN_MAPPING).reduce((acc, key) => {
+      if (!ds.highlight || !ds.highlight.hasOwnProperty(`${key}.search`)) {
+        return acc;
       }
-      return {content: ds._source, highlight: ds.highlight, additionalHits: additionalHits};
+
+      acc[DATASET_SEARCH_RETURN_MAPPING[key]] = ds.highlight[`${key}.search`];
+      return acc;
+    }, {});
+
+    // Isolate dataset_uuid from the rest of the content
+    const { dataset_uuid, ...contentWithoutUuid } = content;
+
+    if (!ds.inner_hits) {
+      return {
+        dataset_uuid,
+        content: contentWithoutUuid,
+        highlight: highlight
+      };
     }
-    return {content: ds._source, highlight: ds.highlight};
+
+    const terms = Object.keys(ds.inner_hits);
+    const additionalHitsDict = {};
+    if (terms.length > 0) {
+      terms.forEach((t) => {
+        ds.inner_hits[t].hits.hits.forEach((hit) => {
+          if (!additionalHitsDict[hit._nested.offset]) { // We currently don't use this code
+            additionalHitsDict[hit._nested.offset] = {};
+            additionalHitsDict[hit._nested.offset].source = hit._source;
+            additionalHitsDict[hit._nested.offset].highlight = [];
+          }
+          additionalHitsDict[hit._nested.offset].highlight = additionalHitsDict[hit._nested.offset].highlight.concat(hit.highlight['additional.attr_set.k']);
+        });
+      });
+    }
+    const additionalHits = [];
+    for (let key in additionalHitsDict) { // We currently don't use this code
+      const tmp = {};
+      tmp.content = additionalHitsDict[key].source;
+      tmp.highlight = {};
+      tmp.highlight['additional.attr_set.k'] = utils.consolidateHighlight(additionalHitsDict[key].highlight);
+      additionalHits.push(tmp);
+    }
+
+    return {
+      dataset_uuid,
+      content: contentWithoutUuid,
+      highlight: highlight,
+      additionalHits: additionalHits
+    };
   });
-  result.total = searchResults.hits.total.value;
+
+  const countQuery = queryGenerator.getDatasetCountQuery(searchableText, filters, options);
+  const countResult = await elasticsearch.count(config.indexDS, countQuery);
+  result.total = countResult;
   result.data = datasets;
   return result;
 };
 
 const export2CSV = async (searchText, filters, options) => {
-  const returnFields = [
-    'dataset_uuid',
-    'dataset_source_repo',
-    'dataset_title',
-    'description',
-    'dataset_source_id',
-    'dataset_source_url',
-    'PI_name',
-    // 'GPA',
-    'dataset_doc',
-    'dataset_pmid',
-    'funding_source',
-    'release_date',
-    'limitations_for_reuse',
-    'assay_method',
-    'study_type',
-    'primary_disease',
-    'participant_count',
-    'sample_count',
-    'study_links',
-    'related_genes',
-    'related_diseases',
-    'related_terms',
-    'dataset_year_enrollment_started',
-    'dataset_year_enrollment_ended',
-    'dataset_minimum_age_at_baseline',
-    'dataset_maximum_age_at_baseline'
-  ];
-  const query = queryGenerator.getSearchQueryV2(searchText, filters, options, returnFields);
+  const query = queryGenerator.getSearchQueryV2(searchText, filters, options, DATASET_RETURN_FIELDS);
   const searchResults = await elasticsearch.search(config.indexDS, query);
   const datasets = searchResults.hits.map((dataset) => dataset._source);
 
@@ -161,11 +183,36 @@ const getFilters = async (searchText, searchFilters) => {
 
   filters = {};
 
+  // Check searchText type
+  if (searchText && typeof searchText !== 'string') {
+    return filters;
+  }
+
+  // Check filters type
+  if (searchFilters && (typeof searchFilters !== 'object' || Array.isArray(searchFilters))) {
+    return filters;
+  }
+
+  // Format the search text
+  if (searchText) {
+    const sanitizedSearchText = searchText.replace(/[^a-zA-Z0-9]+/g, ' '); // Ignore special characters
+    searchableText = utils.getSearchableText(sanitizedSearchText);
+  }
+
   // Must obtain counts for each filter as if the filter were not applied
   await Promise.all(FACET_FILTERS.map(async (filterName) => {
     // Obtain counts from Opensearch
+    let filtersResponse;
     const query = queryGenerator.getDatasetFiltersQuery(searchText, searchFilters, filterName);
-    const filtersResponse = await elasticsearch.searchWithAggregations(config.indexDS, query);
+
+    try {
+      filtersResponse = await elasticsearch.searchWithAggregations(config.indexDS, query);
+    } catch (error) {
+      logger.error(`Error searching datasets: ${error}`);
+      return {
+        error: error?.body?.error?.root_cause ? JSON.stringify(error.body.error.root_cause).replace(/\\n/g, '') : error.message,
+      };
+    }
 
     // Extract counts from response
     filters[filterName] = filtersResponse.aggs[filterName].buckets.map((bucket) => ({
