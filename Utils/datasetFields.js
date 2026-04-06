@@ -99,7 +99,7 @@ const datasetFields = {
   'Dataset Source ID': 'dataset_source_id',
   'Dataset Source Repository': 'dataset_source_repo',
   'Dataset Source URL': 'dataset_source_url',
-  'Dataset Storage Distribution': 'dataset_storage_distribution',
+  'Dataset Storage and Distribution Platform': 'dataset_storage_distribution',
   'Institute': 'institute',
   'Principal Investigator(s)': 'PI_name',
   // Specifically exclude GPA, because we don't display it anywhere
