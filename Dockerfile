@@ -1,22 +1,21 @@
 FROM node:22-alpine3.23 AS fnl_base_image
 
-ENV PORT 8081
-ENV NODE_ENV production
+ENV PORT=8081
+ENV NODE_ENV=production
 
 WORKDIR /usr/src/app
-
-RUN npm install -g npm@latest
 
 # zlib: CVE-2026-27171
 RUN apk update && apk add --no-cache --upgrade zlib=1.3.2-r0
 
 COPY package*.json ./
+COPY --chown=node:node . .
 
 RUN npm ci --only=production
 
-#USER node
-
-COPY --chown=node:node . .
+RUN rm -rf /usr/local/lib/node_modules/npm \
+  && rm -f /usr/local/bin/npm \
+  && rm -f /usr/local/bin/npx
 
 EXPOSE 8081 9200
 
