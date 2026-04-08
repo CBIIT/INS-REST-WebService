@@ -5,8 +5,6 @@ ENV NODE_ENV production
 
 WORKDIR /usr/src/app
 
-RUN npm install -g npm@latest
-
 # zlib: CVE-2026-27171
 RUN apk update && apk add --no-cache --upgrade zlib=1.3.2-r0
 
