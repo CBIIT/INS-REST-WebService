@@ -1,6 +1,5 @@
 let path = require("path");
 let localEnv = require("dotenv");
-let _ = require("lodash");
 
 const cfg = localEnv.config();
 if (!cfg.error) {
@@ -118,4 +117,4 @@ var config = {
 
 // Export the config object based on the NODE_ENV
 // ==============================================
-module.exports = _.merge(config, {});
+module.exports = { ...config };
