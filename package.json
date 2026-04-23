@@ -1,6 +1,6 @@
 {
   "name": "ins-rest-webservice",
-  "version": "3.3.1",
+  "version": "3.4.0",
   "description": "Childhood Cancer Data Catalog",
   "main": "app.js",
   "scripts": {
