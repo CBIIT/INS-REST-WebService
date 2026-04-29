@@ -25,6 +25,16 @@ cacheKeyGenerator.datasetsCountKey = () => {
   return "ds_counts";
 };
 
+cacheKeyGenerator.resourcesFilterKey = async (searchText, searchFilters) => {
+  const filtersHash = await hash(searchFilters);
+  const textHash = await hash(searchText);
+  return `rs_filters_${textHash}_${filtersHash}`;
+};
+
+cacheKeyGenerator.resourcesCountKey = () => {
+  return "rs_counts";
+};
+
 cacheKeyGenerator.filtersKey = (searchText, searchFilters) => {
   return `ds_filters`;
 };
