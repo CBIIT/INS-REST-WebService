@@ -1,6 +1,9 @@
 // Default sort field for resource search
 const RESOURCE_DEFAULT_SORT_FIELD = 'resource_title_sort';
 
+// Identifier for a resource
+const RESOURCE_IDENTIFIER_FIELD = 'resource_uuid';
+
 // Resource fields eligible for text search
 const RESOURCE_SEARCH_FIELDS = [
   // 'resource_uuid',
@@ -40,6 +43,24 @@ const RESOURCE_RETURN_FIELDS = [
   'resource_full_description',
 ];
 
+// Fields to return for a single resource's details page
+const RESOURCE_DETAILS_RETURN_FIELDS = [
+  'resource_uuid',
+  'resource_source_id',
+  'resource_title',
+  'resource_short_description',
+  'resource_source_url',
+  'resource_tool_type',
+  'resource_tool_subtype',
+  'resource_research_area',
+  'resource_research_type',
+  'resource_access',
+  'resource_doc',
+  'resource_poc_name',
+  'resource_poc_email',
+  'resource_full_description',
+]
+
 // Opensearch properties that need to be mapped to different return fields
 const RESOURCE_SEARCH_RETURN_MAPPING_EXCEPTIONS = {
   'resource_short_description_anchorless': 'resource_short_description',
@@ -58,8 +79,9 @@ const RESOURCE_SEARCH_RETURN_MAPPING = {
 
 module.exports = {
   RESOURCE_DEFAULT_SORT_FIELD,
-  RESOURCE_SEARCH_FIELDS,
   RESOURCE_HIGHLIGHT_FIELDS,
+  RESOURCE_IDENTIFIER_FIELD,
   RESOURCE_RETURN_FIELDS,
+  RESOURCE_SEARCH_FIELDS,
   RESOURCE_SEARCH_RETURN_MAPPING,
 };

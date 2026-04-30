@@ -55,6 +55,10 @@ cacheKeyGenerator.dataresourceKey = (id) => {
   return `dr_item_${id}`;
 };
 
+cacheKeyGenerator.resourceKey = (id) => {
+  return `r_item_${id}`;
+};
+
 cacheKeyGenerator.siteUpdateDateKey = () => {
   return "app_site_update_date";
 };

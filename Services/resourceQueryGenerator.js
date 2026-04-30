@@ -1,4 +1,8 @@
-const { RESOURCE_SEARCH_FIELDS, RESOURCE_HIGHLIGHT_FIELDS } = require('../Utils/resourceFields.js');
+const {
+  RESOURCE_HIGHLIGHT_FIELDS,
+  RESOURCE_IDENTIFIER_FIELD,
+  RESOURCE_SEARCH_FIELDS,
+} = require('../Utils/resourceFields.js');
 
 let queryGenerator = {};
 
@@ -418,165 +422,16 @@ queryGenerator.getResourceCountQuery = (searchText, searchFilters) => {
   return body;
 };
 
-queryGenerator.getParticipatingResourcesSearchQuery = (filters, options) => {
-  let query = {};
-  const filterKeys = Object.keys(filters);
-  if(filterKeys.length > 0){
-    query.bool = {};
-    query.bool.must = [];
-    for(let k = 0; k < filterKeys.length; k ++){
-      let attribute = "";
-      if (filterKeys[k] === "resource_type") {
-        attribute = "resource_type";
-      }
-      else if(filterKeys[k] === "data_content_type") {
-        attribute = "data_content_type";
-      }
-      else {
-        attribute = "";
-      }
-      
-      if(attribute !== ""){
-        let clause = {};
-        clause.bool = {};
-        clause.bool.should = [];
-        filters[filterKeys[k]].map((item) => {
-          let tmp = {};
-          tmp.match = {};
-          tmp.match[attribute] = item;
-          clause.bool.should.push(tmp);
-        });
-        query.bool.must.push(clause);
-      }
-    }
-    if(query.bool.must.length === 0){
-      query = {};
-      query.match_all = {};
-    }
-  }
-  else{
-    query.match_all = {};
-  }
-
-  let body = {
-    size: options.pageInfo.pageSize,
-    from: (options.pageInfo.page - 1 ) * options.pageInfo.pageSize
-  };
-  body.query = query;
-  body.sort = [];
-  let tmp = {};
-  tmp["resource_name"] = "asc";
-  // body.sort.push(tmp);
-  return body;
-};
-
-queryGenerator.getDocumentSearchQuery = (keyword, options) => {
-  let body = {
-    size: options.pageInfo.pageSize,
-    from: (options.pageInfo.page - 1 ) * options.pageInfo.pageSize
-  };
-  let query = {};
-  const strArr = keyword.trim().split(" ");
-  const result = [];
-  strArr.forEach((term) => {
-    const t = term.trim();
-    if (t.length > 2) {
-      result.push(t);
-    }
-  });
-  const keywords = result.length === 0 ? "" : result.join(" ");
-  if(keywords != ""){
-    const termArr = keywords.split(" ");
-    let compoundQuery = {};
-    compoundQuery.bool = {};
-    compoundQuery.bool.must = [];
-    termArr.forEach((term) => {
-      let searchTerm = term.trim();
-      if(searchTerm != ""){
-        let dsl = {};
-        dsl.multi_match = {};
-        dsl.multi_match.query = searchTerm;
-        //dsl.multi_match.analyzer = "standard_analyzer";
-        dsl.multi_match.fields = [
-          "title", "description", "content"
-        ];
-        // compoundQuery.bool.must.push(dsl);
-      }
-    });
-    body.query = compoundQuery;
-  }
-  else {
-    query.match_all = {};
-    body.query = query;
-  }
-
-  body.sort = [];
-  let tmp = {};
-  tmp["title.raw"] = "asc";
-  // body.sort.push(tmp);
-
-  body.highlight = {
-    pre_tags: ["<b>"],
-    post_tags: ["</b>"],
-    fields: {
-      "title": { number_of_fragments: 0 },
-      "description": { number_of_fragments: 0 },
-      "content": { number_of_fragments: 0 },
-      "link": { number_of_fragments: 0 }
+queryGenerator.getResourceByIdQuery = (id) => {
+  return {
+    size: 1,
+    from: 0,
+    query: {
+      term: {
+        [RESOURCE_IDENTIFIER_FIELD]: id,
+      },
     },
   };
-  return body;
-};
-
-queryGenerator.getResourceByIdQuery = (id) => {
-  let dsl = {};
-  dsl.match = {};
-  dsl.match.resource_id = id;
-
-  let body = {
-    size: 1,
-    from: 0
-  };
-  body.query = dsl;
-  // body.sort = [{
-  //   "resource_id": "asc"
-  // }];
-  
-  return body;
-};
-
-queryGenerator.getDataresourceByIdQuery = (id) => {
-  let dsl = {};
-  dsl.match = {};
-  dsl.match.data_resource_id = id;
-
-  let body = {
-    size: 1,
-    from: 0
-  };
-  body.query = dsl;
-  // body.sort = [{
-  //   "data_resource_id": "asc"
-  // }];
-  
-  return body;
-};
-
-queryGenerator.getResourcesByDataresourceIdQuery = (dataresourceId) => {
-  let dsl = {};
-  dsl.match = {};
-  dsl.match.data_resource_id = dataresourceId;
-
-  let body = {
-    size: 1000,
-    from: 0
-  };
-  body.query = dsl;
-  // body.sort = [{
-  //   "resource_id": "asc"
-  // }];
-  
-  return body;
 };
 
 module.exports = queryGenerator;

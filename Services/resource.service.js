@@ -147,15 +147,20 @@ const search = async (searchText, filters, options) => {
 const searchById = async (id) => {
   let resourceKey = cacheKeyGenerator.resourceKey(id);
   let resource = cache.getValue(resourceKey);
-  if (!resource) {
-    let query = queryGenerator.getResourceByIdQuery(id);
-    let searchResults = await elasticsearch.search(config.indexR, query);
-    let resources = searchResults.hits.map((ds) => {
-      return ds._source;
-    });
-    resource = resources[0];
-    cache.setValue(resourceKey, resource, config.itemTTL);
+
+  // Return cached resource, if available
+  if (resource) {
+    return resource;
   }
+
+  let query = queryGenerator.getResourceByIdQuery(id);
+  let searchResults = await elasticsearch.search(config.indexR, query);
+  let resources = searchResults.hits.map((ds) => {
+    return ds._source;
+  });
+  resource = resources[0];
+  cache.setValue(resourceKey, resource, config.itemTTL);
+
   return resource;
 };
 
