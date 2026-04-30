@@ -24,7 +24,7 @@ const RESOURCE_HIGHLIGHT_FIELDS = RESOURCE_SEARCH_FIELDS;
 
 // Fields to return in resource search results
 const RESOURCE_RETURN_FIELDS = [
-  // 'resource_uuid',
+  'resource_uuid',
   // 'resource_source_id',
   'resource_title',
   'resource_short_description',
