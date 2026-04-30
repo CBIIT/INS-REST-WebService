@@ -10,6 +10,7 @@ const config = require("./index");
 const applicationRouter = require("../Routes/application.routes");
 const datasetRouter = require("../Routes/dataset.routes");
 const documentRouter = require("../Routes/document.routes");
+const resourceItemRouter = require("../Routes/resource-item.routes");
 const resourceRouter = require("../Routes/resource.routes");
 
 module.exports = function(app) {
@@ -32,6 +33,7 @@ module.exports = function(app) {
   app.use("/service/application", applicationRouter);
   app.use("/service/datasets", datasetRouter);
   app.use("/service/documents", documentRouter);
+  app.use("/service/resource", resourceItemRouter);
   app.use("/service/resources", resourceRouter);
 
   app.get("/service", (req, res) => {
