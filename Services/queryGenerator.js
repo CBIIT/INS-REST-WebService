@@ -131,7 +131,7 @@ queryGenerator.getFiltersClause = (filters) => {
 
   // Ignore filters with no values selected
   const cleanedFilters = Object.fromEntries(
-    Object.entries(filters).filter(([field, values]) => values.length > 0)
+    Object.entries(filters).filter(([field, values]) => Array.isArray(values) && values.length > 0)
   );
 
   // If no filters, then return null
