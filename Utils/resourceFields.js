@@ -59,7 +59,7 @@ const RESOURCE_DETAILS_RETURN_FIELDS = [
   'resource_poc_name',
   'resource_poc_email',
   'resource_full_description',
-]
+];
 
 // Opensearch properties that need to be mapped to different return fields
 const RESOURCE_SEARCH_RETURN_MAPPING_EXCEPTIONS = {
