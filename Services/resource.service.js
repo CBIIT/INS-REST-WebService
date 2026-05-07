@@ -223,18 +223,8 @@ const getFilters = async (searchText, searchFilters) => {
   return filters;
 };
 
-const searchResourcesByResourceId = async (resourceId) => {
-  let query = queryGenerator.getResourcesByResourceIdQuery(resourceId);
-  let searchResults = await elasticsearch.search(config.indexR, query);
-  let resources = searchResults.hits.map((ds) => {
-    return ds._source;
-  });
-  return resources;
-}
-
 module.exports = {
   search,
   searchById,
   getFilters,
-  searchResourcesByResourceId,
 };
