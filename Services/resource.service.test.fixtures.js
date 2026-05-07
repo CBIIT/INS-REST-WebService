@@ -133,3 +133,30 @@ export const errorOpensearchResults = {
   },
   status: 400,
 };
+
+export const resourceId = 'resource-uuid-1';
+
+export const resourceByIdResult = {
+  resource_uuid: 'resource-uuid-1',
+  resource_source_id: 'resource-source-1',
+  resource_title: 'Multiple Myeloma Data Portal',
+  resource_short_description: 'Portal for multiple myeloma datasets and tools.',
+  resource_source_url: 'https://example.org/resource-1',
+  resource_tool_type: 'Datasets and Databases',
+  resource_tool_subtype: 'Portal',
+  resource_research_area: 'Cancer Omics',
+  resource_research_type: 'Translational Research',
+  resource_access: 'Open',
+  resource_doc: 'NCI',
+  resource_poc_name: 'Jane Doe',
+  resource_poc_email: 'jane@example.org',
+  resource_full_description: 'Detailed description for the multiple myeloma portal.',
+};
+
+export const resourceByIdOpensearchResults = {
+  hits: [
+    {
+      _source: resourceByIdResult,
+    },
+  ],
+};

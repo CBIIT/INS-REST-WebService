@@ -10,7 +10,11 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 
 const elasticsearch = require('../Components/elasticsearch');
+const cache = require('../Components/cache');
+const cacheKeyGenerator = require('./cacheKeyGenerator.js');
+const queryGenerator = require('./resourceQueryGenerator.js');
 const resourceService = require('./resource.service.js');
+const { RESOURCE_DETAILS_RETURN_FIELDS } = require('../Utils/resourceFields.js');
 import {
   inclusiveFilters,
   inclusiveOptions,
@@ -20,13 +24,19 @@ import {
   normalSearchText,
   normalOpensearchResults,
   errorOpensearchResults,
+  resourceByIdOpensearchResults,
+  resourceByIdResult,
+  resourceId,
 } from './resource.service.test.fixtures.js';
 
 beforeEach(() => {
   vi.restoreAllMocks();
 
   vi.spyOn(elasticsearch, 'searchWithAggregations').mockResolvedValue(normalOpensearchResults);
+  vi.spyOn(elasticsearch, 'search').mockResolvedValue(resourceByIdOpensearchResults);
   vi.spyOn(elasticsearch, 'count').mockResolvedValue(normalOpensearchResults.hits.total.value);
+  vi.spyOn(cache, 'getValue').mockReturnValue(undefined);
+  vi.spyOn(cache, 'setValue').mockImplementation(() => undefined);
 });
 
 describe('search', () => {
@@ -91,5 +101,36 @@ describe('search', () => {
     expect(elasticsearch.searchWithAggregations).toHaveBeenCalled();
     expect(result).toHaveProperty('error');
     expect(result.error).toBeDefined();
+  });
+});
+
+describe('searchById', () => {
+  it('should return only the expected fields from a cached resource', async () => {
+    cache.getValue.mockReturnValue(resourceByIdResult);
+    const resourceKeySpy = vi.spyOn(cacheKeyGenerator, 'resourceKey');
+
+    const result = await resourceService.searchById(resourceId);
+
+    expect(resourceKeySpy).toHaveBeenCalledWith(resourceId);
+    expect(elasticsearch.search).not.toHaveBeenCalled();
+    expect(cache.setValue).not.toHaveBeenCalled();
+    RESOURCE_DETAILS_RETURN_FIELDS.forEach((field) => {
+      expect(result).toHaveProperty(field);
+    });
+  });
+
+  it('should return and cache only the expected fields when querying by id', async () => {
+    const resourceKeySpy = vi.spyOn(cacheKeyGenerator, 'resourceKey');
+    const getResourceByIdQuerySpy = vi.spyOn(queryGenerator, 'getResourceByIdQuery');
+
+    const result = await resourceService.searchById(resourceId);
+
+    expect(resourceKeySpy).toHaveBeenCalledWith(resourceId);
+    expect(getResourceByIdQuerySpy).toHaveBeenCalledWith(resourceId);
+    expect(elasticsearch.search).toHaveBeenCalledTimes(1);
+    RESOURCE_DETAILS_RETURN_FIELDS.forEach((field) => {
+      expect(result).toHaveProperty(field);
+    });
+    expect(cache.setValue).toHaveBeenCalledWith(expect.any(String), expect.any(Object), expect.any(Number));
   });
 });

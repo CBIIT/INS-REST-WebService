@@ -7,6 +7,7 @@ const queryGenerator = require('./resourceQueryGenerator.js');
 const cacheKeyGenerator = require('./cacheKeyGenerator.js');
 const utils = require('../Utils/index.js');
 const {
+  RESOURCE_DETAILS_RETURN_FIELDS,
   RESOURCE_RETURN_FIELDS,
   RESOURCE_SEARCH_RETURN_MAPPING
 } = require('../Utils/resourceFields.js');
@@ -158,7 +159,12 @@ const searchById = async (id) => {
   let resources = searchResults.hits.map((ds) => {
     return ds._source;
   });
-  resource = resources[0];
+  resource = RESOURCE_DETAILS_RETURN_FIELDS.reduce((acc, field) => {
+    if (Object.prototype.hasOwnProperty.call(resources[0], field)) {
+      acc[field] = resources[0][field];
+    }
+    return acc;
+  }, {});
   cache.setValue(resourceKey, resource, config.itemTTL);
 
   return resource;
