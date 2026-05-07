@@ -85,19 +85,8 @@ const getFilters = async (req, res) => {
   res.json({status: 'success', data: filters});
 };
 
-const getResourceCount = async (req, res) => {
-  let options = {};
-  let filters = [];
-  let searchText = '';
-  options.pageInfo = {page: 1, pageSize: 10};
-  options.sort = {k: 'dbGaP_phs', v: 'asc'};
-  const searchResult = await resourceService.search(searchText, filters, options);
-  res.json({status: 'success', data: searchResult.total});
-}
-
 module.exports = {
 	search,
   getFilters,
 	getById,
-  getResourceCount,
 };
