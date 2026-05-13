@@ -86,17 +86,22 @@ describe('search', () => {
   it('should return a success response for a normal request body', async () => {
     vi.spyOn(resourceService, 'search').mockResolvedValue(normalSearchResult);
 
+    const requestBody = {
+      ...normalRequestBody,
+      pageInfo: { ...normalRequestBody.pageInfo },
+    };
     const req = {
-      body: normalRequestBody,
+      body: requestBody,
     };
     const res = { status: vi.fn(), json: vi.fn() };
 
     await resourceControllers.search(req, res);
 
     expect(resourceService.search).toHaveBeenCalledWith(normalRequestBody.search_text, normalRequestBody.filters, {
-      pageInfo: normalRequestBody.pageInfo,
+      pageInfo: requestBody.pageInfo,
       sort: { k: RESOURCE_DEFAULT_SORT_FIELD, v: 'asc' },
     });
+    expect(requestBody.pageInfo).toStrictEqual(normalRequestBody.pageInfo);
     expect(res.json).toHaveBeenCalledWith({
       status: 'success',
       data: {

@@ -28,7 +28,7 @@ const search = async (req, res) => {
   options.pageInfo = pageInfo;
   options.sort = sort;
   data.sort = sort;
-  data.pageInfo = options.pageInfo;
+  data.pageInfo = { ...options.pageInfo };
 
   const searchResult = await resourceService.search(searchText, filters, options);
 
@@ -47,6 +47,7 @@ const search = async (req, res) => {
     let lastPage = Math.ceil(searchResult.total / options.pageInfo.pageSize);
     options.pageInfo.page = lastPage;
     const searchResultAgain = await resourceService.search(searchText, filters, options);
+    data.pageInfo.page = options.pageInfo.page;
     data.pageInfo.total = searchResultAgain.total;
     data.result = searchResultAgain.data;
     data.aggs = searchResultAgain.aggs;
