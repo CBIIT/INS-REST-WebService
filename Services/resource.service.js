@@ -49,6 +49,7 @@ const search = async (searchText, filters, options) => {
     return result;
   }
 
+  // TODO - might need this later, hence the false &&
   if (false && searchableText !== "") {
     let aggregationKey = cacheKeyGenerator.getAggregationKey(searchableText);
     let aggregation = cache.getValue(aggregationKey);
