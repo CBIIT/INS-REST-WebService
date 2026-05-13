@@ -8,10 +8,16 @@ import {
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 
-import { foundResource } from './resource.controllers.test.fixtures.js';
+import {
+  foundResource,
+  normalRequestBody,
+  normalSearchResult,
+  openSearchErrorMessage,
+} from './resource.controllers.test.fixtures.js';
 
 const resourceService = require('../Services/resource.service.js');
 const resourceControllers = require('./resource.controllers.js');
+const { RESOURCE_DEFAULT_SORT_FIELD } = require('../Utils/resourceFields.js');
 
 describe('getById', () => {
   it('should return a failure response when the resource is not found', async () => {
@@ -46,6 +52,65 @@ describe('getById', () => {
     expect(res.json).toHaveBeenCalledWith({
       status: 'success',
       data: foundResource,
+    });
+  });
+});
+
+describe('search', () => {
+  it('should return an error response when the resource search fails', async () => {
+    vi.spyOn(resourceService, 'search').mockResolvedValue({
+      error: openSearchErrorMessage,
+    });
+
+    const json = vi.fn();
+    const status = vi.fn(() => ({ json }));
+    const req = {
+      body: normalRequestBody,
+    };
+    const res = { status, json: vi.fn() };
+
+    await resourceControllers.search(req, res);
+
+    expect(resourceService.search).toHaveBeenCalledWith(normalRequestBody.search_text, normalRequestBody.filters, {
+      pageInfo: normalRequestBody.pageInfo,
+      sort: { k: RESOURCE_DEFAULT_SORT_FIELD, v: 'asc' },
+    });
+    expect(status).toHaveBeenCalledWith(500);
+    expect(json).toHaveBeenCalledWith({
+      status: 'error',
+      aggs: 'all',
+      data: {},
+      error: openSearchErrorMessage,
+    });
+    expect(res.json).not.toHaveBeenCalled();
+  });
+
+  it('should return a success response for a normal request body', async () => {
+    vi.spyOn(resourceService, 'search').mockResolvedValue(normalSearchResult);
+
+    const req = {
+      body: normalRequestBody,
+    };
+    const res = { status: vi.fn(), json: vi.fn() };
+
+    await resourceControllers.search(req, res);
+
+    expect(resourceService.search).toHaveBeenCalledWith(normalRequestBody.search_text, normalRequestBody.filters, {
+      pageInfo: normalRequestBody.pageInfo,
+      sort: { k: RESOURCE_DEFAULT_SORT_FIELD, v: 'asc' },
+    });
+    expect(res.status).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({
+      status: 'success',
+      data: {
+        sort: { k: RESOURCE_DEFAULT_SORT_FIELD, v: 'asc' },
+        pageInfo: {
+          ...normalRequestBody.pageInfo,
+          total: normalSearchResult.total,
+        },
+        result: normalSearchResult.data,
+        aggs: normalSearchResult.aggs,
+      },
     });
   });
 });
