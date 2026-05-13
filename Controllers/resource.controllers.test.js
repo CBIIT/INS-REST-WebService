@@ -10,6 +10,7 @@ const require = createRequire(import.meta.url);
 
 import {
   foundResource,
+  normalFiltersResult,
   normalRequestBody,
   normalSearchResult,
   openSearchErrorMessage,
@@ -111,6 +112,50 @@ describe('search', () => {
         result: normalSearchResult.data,
         aggs: normalSearchResult.aggs,
       },
+    });
+  });
+});
+
+describe('getFilters', () => {
+  it('should return an error response when the filters query fails', async () => {
+    vi.spyOn(resourceService, 'getFilters').mockResolvedValue({
+      error: openSearchErrorMessage,
+    });
+
+    const json = vi.fn();
+    const status = vi.fn(() => ({ json }));
+    const req = {
+      body: normalRequestBody,
+    };
+    const res = { status, json: vi.fn() };
+
+    await resourceControllers.getFilters(req, res);
+
+    expect(resourceService.getFilters).toHaveBeenCalledWith(normalRequestBody.search_text, normalRequestBody.filters);
+    expect(status).toHaveBeenCalledWith(500);
+    expect(json).toHaveBeenCalledWith({
+      status: 'error',
+      data: {},
+      error: openSearchErrorMessage,
+    });
+    expect(res.json).not.toHaveBeenCalled();
+  });
+
+  it('should return a success response for a normal request body', async () => {
+    vi.spyOn(resourceService, 'getFilters').mockResolvedValue(normalFiltersResult);
+
+    const req = {
+      body: normalRequestBody,
+    };
+    const res = { status: vi.fn(), json: vi.fn() };
+
+    await resourceControllers.getFilters(req, res);
+
+    expect(resourceService.getFilters).toHaveBeenCalledWith(normalRequestBody.search_text, normalRequestBody.filters);
+    expect(res.status).not.toHaveBeenCalled();
+    expect(res.json).toHaveBeenCalledWith({
+      status: 'success',
+      data: normalFiltersResult,
     });
   });
 });

@@ -16,6 +16,8 @@ const queryGenerator = require('./resourceQueryGenerator.js');
 const resourceService = require('./resource.service.js');
 const { RESOURCE_DETAILS_RETURN_FIELDS } = require('../Utils/resourceFields.js');
 import {
+  expectedResourceResearchAreaFiltersQuery,
+  expectedResourceToolTypeFiltersQuery,
   inclusiveFilters,
   inclusiveOptions,
   inclusiveSearchText,
@@ -141,5 +143,59 @@ describe('searchById', () => {
 
     expect(result).toBeNull();
     expect(cache.setValue).not.toHaveBeenCalled();
+  });
+});
+
+describe('getFilters', () => {
+  it('should return an empty object when searchText is invalid', async () => {
+    const result = await resourceService.getFilters(123, normalFilters);
+
+    expect(result).toEqual({});
+    expect(elasticsearch.searchWithAggregations).not.toHaveBeenCalled();
+  });
+
+  it('should return an empty object when searchFilters is invalid', async () => {
+    const result = await resourceService.getFilters(normalSearchText, 'invalid-filters');
+
+    expect(result).toEqual({});
+    expect(elasticsearch.searchWithAggregations).not.toHaveBeenCalled();
+  });
+
+  it('should query resource_tool_type counts without applying the resource_tool_type filter', async () => {
+    elasticsearch.searchWithAggregations.mockImplementation(async (_index, query) => ({
+      aggs: {
+        [Object.keys(query.aggs)[0]]: {
+          buckets: [],
+        },
+      },
+    }));
+
+    await resourceService.getFilters(normalSearchText, normalFilters);
+
+    const resourceToolTypeQuery = elasticsearch.searchWithAggregations.mock.calls.find(([, query]) => {
+      return Object.prototype.hasOwnProperty.call(query.aggs, 'resource_tool_type');
+    })?.[1];
+
+    expect(resourceToolTypeQuery).toBeDefined();
+    expect(resourceToolTypeQuery).toStrictEqual(expectedResourceToolTypeFiltersQuery);
+  });
+
+  it('should query resource_research_area counts without applying the resource_research_area filter', async () => {
+    elasticsearch.searchWithAggregations.mockImplementation(async (_index, query) => ({
+      aggs: {
+        [Object.keys(query.aggs)[0]]: {
+          buckets: [],
+        },
+      },
+    }));
+
+    await resourceService.getFilters(normalSearchText, normalFilters);
+
+    const resourceResearchAreaQuery = elasticsearch.searchWithAggregations.mock.calls.find(([, query]) => {
+      return Object.prototype.hasOwnProperty.call(query.aggs, 'resource_research_area');
+    })?.[1];
+
+    expect(resourceResearchAreaQuery).toBeDefined();
+    expect(resourceResearchAreaQuery).toStrictEqual(expectedResourceResearchAreaFiltersQuery);
   });
 });

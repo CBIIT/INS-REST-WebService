@@ -2,6 +2,11 @@
  * Fixtures for the resource.service.test.js file
  */
 
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+
+const queryGenerator = require('./resourceQueryGenerator.js');
+
 export const inclusiveSearchText = '';
 export const normalSearchText = 'multiple myeloma';
 export const inclusiveFilters = {};
@@ -160,3 +165,15 @@ export const resourceByIdOpensearchResults = {
     },
   ],
 };
+
+export const expectedResourceToolTypeFiltersQuery = queryGenerator.getResourceFiltersQuery(
+  normalSearchText,
+  normalFilters,
+  'resource_tool_type'
+);
+
+export const expectedResourceResearchAreaFiltersQuery = queryGenerator.getResourceFiltersQuery(
+  normalSearchText,
+  normalFilters,
+  'resource_research_area'
+);

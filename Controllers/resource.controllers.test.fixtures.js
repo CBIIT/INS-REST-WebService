@@ -16,3 +16,18 @@ export const normalSearchResult = {
   data: [foundResource],
   aggs: 'all',
 };
+
+export const normalFiltersResult = {
+  resource_tool_type: [
+    {
+      name: 'Analysis Tools',
+      count: 2,
+    },
+  ],
+  resource_research_area: [
+    {
+      name: 'Cancer Omics',
+      count: 1,
+    },
+  ],
+};
