@@ -212,7 +212,7 @@ const getFilters = async (searchText, searchFilters) => {
   await Promise.all(FACET_FILTERS.map(async (filterName) => {
     // Obtain counts from Opensearch
     let filtersResponse;
-    const query = queryGenerator.getResourceFiltersQuery(searchText, searchFilters, filterName);
+    const query = queryGenerator.getResourceFiltersQuery(searchableText, searchFilters, filterName);
 
     try {
       filtersResponse = await elasticsearch.searchWithAggregations(config.indexR, query);
