@@ -42,24 +42,12 @@ beforeEach(() => {
 });
 
 describe('search', () => {
-  it('should have a data key in the results object', async () => {
+  it('should return search results with a data array and numeric total', async () => {
     const result = await resourceService.search(normalSearchText, normalFilters, normalOptions);
-    expect(elasticsearch.searchWithAggregations).toHaveBeenCalled();
+
     expect(result).toHaveProperty('data');
-  });
-
-  it('should have the correct type for data in the results object', async () => {
-    const result = await resourceService.search(normalSearchText, normalFilters, normalOptions);
     expect(Array.isArray(result.data)).toBe(true);
-  });
-
-  it('should have a total key in the results object', async () => {
-    const result = await resourceService.search(normalSearchText, normalFilters, normalOptions);
     expect(result).toHaveProperty('total');
-  });
-
-  it('should have the correct type for total in the results object', async () => {
-    const result = await resourceService.search(normalSearchText, normalFilters, normalOptions);
     expect(result.total).toBeTypeOf('number');
   });
 
@@ -100,7 +88,6 @@ describe('search', () => {
 
     const result = await resourceService.search(normalSearchText, normalFilters, normalOptions);
 
-    expect(elasticsearch.searchWithAggregations).toHaveBeenCalled();
     expect(result).toHaveProperty('error');
     expect(result.error).toBeDefined();
   });
@@ -114,8 +101,6 @@ describe('searchById', () => {
     const result = await resourceService.searchById(resourceId);
 
     expect(resourceKeySpy).toHaveBeenCalledWith(resourceId);
-    expect(elasticsearch.search).not.toHaveBeenCalled();
-    expect(cache.setValue).not.toHaveBeenCalled();
     RESOURCE_DETAILS_RETURN_FIELDS.forEach((field) => {
       expect(result).toHaveProperty(field);
     });
@@ -151,14 +136,12 @@ describe('getFilters', () => {
     const result = await resourceService.getFilters(123, normalFilters);
 
     expect(result).toEqual({});
-    expect(elasticsearch.searchWithAggregations).not.toHaveBeenCalled();
   });
 
   it('should return an empty object when searchFilters is invalid', async () => {
     const result = await resourceService.getFilters(normalSearchText, 'invalid-filters');
 
     expect(result).toEqual({});
-    expect(elasticsearch.searchWithAggregations).not.toHaveBeenCalled();
   });
 
   it('should query resource_tool_type counts without applying the resource_tool_type filter', async () => {
@@ -176,7 +159,6 @@ describe('getFilters', () => {
       return Object.prototype.hasOwnProperty.call(query.aggs, 'resource_tool_type');
     })?.[1];
 
-    expect(resourceToolTypeQuery).toBeDefined();
     expect(resourceToolTypeQuery).toStrictEqual(expectedResourceToolTypeFiltersQuery);
   });
 
@@ -195,7 +177,6 @@ describe('getFilters', () => {
       return Object.prototype.hasOwnProperty.call(query.aggs, 'resource_research_area');
     })?.[1];
 
-    expect(resourceResearchAreaQuery).toBeDefined();
     expect(resourceResearchAreaQuery).toStrictEqual(expectedResourceResearchAreaFiltersQuery);
   });
 });

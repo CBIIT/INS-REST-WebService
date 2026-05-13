@@ -1,4 +1,7 @@
 import { describe, it, expect } from 'vitest';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
 const queryGenerator = require('./queryGenerator.js');
 const { DATASET_SEARCH_FIELDS } = require('../Utils/datasetFields.js');
 import { normalSearchText, normalFilters, normalReturnFields, normalOptions } from './queryGenerator.test.fixtures.js';
@@ -68,7 +71,7 @@ describe('getSearchQueryV2', () => {
     expect(resultOptions).toBeNull();
 
     // Options being an array
-    const resultOptionsArray = queryGenerator.getSearchQueryV2(normalSearchText, normalFilters, [1,2,3], normalReturnFields);
+    const resultOptionsArray = queryGenerator.getSearchQueryV2(normalSearchText, normalFilters, [1, 2, 3], normalReturnFields);
     expect(resultOptionsArray).toBeNull();
 
     // Return fields not being an array
@@ -146,8 +149,8 @@ describe('getSearchQueryV2', () => {
       ...normalOptions,
       pageInfo: {
         ...normalOptions.pageInfo,
-        page: "1001", // test numeric strings (as from query params)
-        pageSize: "10", // from = 10 * (1001 - 1) = 10000
+        page: '1001', // test numeric strings (as from query params)
+        pageSize: '10', // from = 10 * (1001 - 1) = 10000
       },
     };
 
@@ -195,8 +198,8 @@ describe('getSearchQueryV2', () => {
       ...normalOptions,
       pageInfo: {
         ...normalOptions.pageInfo,
-        page: "11", // from = 10 * (11 - 1) = 100
-        pageSize: "10", // from + size = 110 (no scroll)
+        page: '11', // from = 10 * (11 - 1) = 100
+        pageSize: '10', // from + size = 110 (no scroll)
       },
     };
 

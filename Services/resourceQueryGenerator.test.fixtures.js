@@ -1,6 +1,9 @@
 /**
  * Fixtures for the resourceQueryGenerator.test.js file
  */
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
 const { RESOURCE_SEARCH_FIELDS } = require('../Utils/resourceFields.js');
 const queryGenerator = require('./resourceQueryGenerator.js');
 

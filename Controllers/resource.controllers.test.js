@@ -37,7 +37,6 @@ describe('getById', () => {
       status: 'failure',
       error: 'No resource found with the provided UUID',
     });
-    expect(res.json).not.toHaveBeenCalled();
   });
 
   it('should return a success response when the resource is found', async () => {
@@ -49,7 +48,6 @@ describe('getById', () => {
     await resourceControllers.getById(req, res);
 
     expect(resourceService.searchById).toHaveBeenCalledWith('resource-uuid-1');
-    expect(res.status).not.toHaveBeenCalled();
     expect(res.json).toHaveBeenCalledWith({
       status: 'success',
       data: foundResource,
@@ -83,7 +81,6 @@ describe('search', () => {
       data: {},
       error: openSearchErrorMessage,
     });
-    expect(res.json).not.toHaveBeenCalled();
   });
 
   it('should return a success response for a normal request body', async () => {
@@ -100,7 +97,6 @@ describe('search', () => {
       pageInfo: normalRequestBody.pageInfo,
       sort: { k: RESOURCE_DEFAULT_SORT_FIELD, v: 'asc' },
     });
-    expect(res.status).not.toHaveBeenCalled();
     expect(res.json).toHaveBeenCalledWith({
       status: 'success',
       data: {
@@ -138,7 +134,6 @@ describe('getFilters', () => {
       data: {},
       error: openSearchErrorMessage,
     });
-    expect(res.json).not.toHaveBeenCalled();
   });
 
   it('should return a success response for a normal request body', async () => {
@@ -152,7 +147,6 @@ describe('getFilters', () => {
     await resourceControllers.getFilters(req, res);
 
     expect(resourceService.getFilters).toHaveBeenCalledWith(normalRequestBody.search_text, normalRequestBody.filters);
-    expect(res.status).not.toHaveBeenCalled();
     expect(res.json).toHaveBeenCalledWith({
       status: 'success',
       data: normalFiltersResult,

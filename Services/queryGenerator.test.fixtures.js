@@ -1,6 +1,9 @@
 /**
  * Fixtures for the queryGenerator.test.js file
  */
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
 const { DATASET_SEARCH_FIELDS } = require('../Utils/datasetFields.js');
 const queryGenerator = require('./queryGenerator.js');
 

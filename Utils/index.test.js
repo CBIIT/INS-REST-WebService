@@ -1,4 +1,7 @@
 import { describe, it, expect } from 'vitest';
+import { createRequire } from 'module';
+
+const require = createRequire(import.meta.url);
 const utils = require('./index.js');
 
 describe('getSearchableText', () => {
