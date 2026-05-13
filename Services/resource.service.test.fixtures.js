@@ -138,7 +138,7 @@ export const resourceId = 'resource-uuid-1';
 
 export const resourceByIdResult = {
   resource_uuid: 'resource-uuid-1',
-  resource_source_id: 'resource-source-1',
+  // resource_source_id: 'resource-source-1',
   resource_title: 'Multiple Myeloma Data Portal',
   resource_short_description: 'Portal for multiple myeloma datasets and tools.',
   resource_source_url: 'https://example.org/resource-1',

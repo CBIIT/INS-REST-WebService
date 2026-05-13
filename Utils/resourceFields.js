@@ -46,7 +46,7 @@ const RESOURCE_RETURN_FIELDS = [
 // Fields to return for a single resource's details page
 const RESOURCE_DETAILS_RETURN_FIELDS = [
   'resource_uuid',
-  'resource_source_id',
+  // 'resource_source_id',
   'resource_title',
   'resource_short_description',
   'resource_source_url',
