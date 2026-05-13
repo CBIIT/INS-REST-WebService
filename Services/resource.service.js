@@ -138,7 +138,7 @@ const search = async (searchText, filters, options) => {
     };
   });
 
-  const countQuery = queryGenerator.getResourceCountQuery(searchableText, filters, options);
+  const countQuery = queryGenerator.getResourceCountQuery(searchableText, filters);
   const countResult = await elasticsearch.count(config.indexR, countQuery);
   result.total = countResult;
   result.data = resources;
