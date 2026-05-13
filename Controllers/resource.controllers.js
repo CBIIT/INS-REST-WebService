@@ -62,6 +62,15 @@ const search = async (req, res) => {
 const getById = async (req, res) => {
   const resourceId = req.params.uuid || req.params.resourceId;
   const searchResult = await resourceService.searchById(resourceId);
+
+  if (!searchResult) {
+    res.status(404).json({
+      status: 'failure',
+      error: 'No resource found with the provided UUID',
+    });
+    return;
+  }
+
   res.json({status:'success', data: searchResult});
 };
 

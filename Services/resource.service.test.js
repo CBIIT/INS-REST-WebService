@@ -133,4 +133,13 @@ describe('searchById', () => {
     });
     expect(cache.setValue).toHaveBeenCalledWith(expect.any(String), expect.any(Object), expect.any(Number));
   });
+
+  it('should return null when querying by id finds no resource', async () => {
+    elasticsearch.search.mockResolvedValue({ hits: [] });
+
+    const result = await resourceService.searchById(resourceId);
+
+    expect(result).toBeNull();
+    expect(cache.setValue).not.toHaveBeenCalled();
+  });
 });

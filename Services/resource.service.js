@@ -159,6 +159,11 @@ const searchById = async (id) => {
   let resources = searchResults.hits.map((ds) => {
     return ds._source;
   });
+
+  // Returns null if no hit
+  if (resources.length === 0) {
+    return null;
+  }
   resource = RESOURCE_DETAILS_RETURN_FIELDS.reduce((acc, field) => {
     if (Object.prototype.hasOwnProperty.call(resources[0], field)) {
       acc[field] = resources[0][field];
