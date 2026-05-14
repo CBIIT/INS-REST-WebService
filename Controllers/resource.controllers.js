@@ -61,7 +61,7 @@ const search = async (req, res) => {
 };
 
 const getById = async (req, res) => {
-  const resourceId = req.params.uuid || req.params.resourceId;
+  const resourceId = req.params.uuid;
   const searchResult = await resourceService.searchById(resourceId);
 
   if (!searchResult) {
