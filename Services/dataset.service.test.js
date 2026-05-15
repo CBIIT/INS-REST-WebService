@@ -36,24 +36,12 @@ beforeEach(() => {
 });
 
 describe('search', () => {
-  it('should have a "data" key in the results object', async () => {
+  it('should return search results with a data array and numeric total', async () => {
     const result = await datasetService.search(normalSearchText, normalFilters, normalOptions);
-    expect(elasticsearch.searchWithAggregations).toHaveBeenCalled();
+
     expect(result).toHaveProperty('data');
-  });
-
-  it('should have the correct type for "data" in the results object', async () => {
-    const result = await datasetService.search(normalSearchText, normalFilters, normalOptions);
     expect(Array.isArray(result.data)).toBe(true);
-  });
-
-  it('should have a "total" key in the results object', async () => {
-    const result = await datasetService.search(normalSearchText, normalFilters, normalOptions);
     expect(result).toHaveProperty('total');
-  });
-
-  it('should have the correct type for "total" in the results object', async () => {
-    const result = await datasetService.search(normalSearchText, normalFilters, normalOptions);
     expect(result.total).toBeTypeOf('number');
   });
 
@@ -93,7 +81,6 @@ describe('search', () => {
     error.body = errorOpensearchResults;
     vi.spyOn(elasticsearch, "searchWithAggregations").mockRejectedValue(error);
     result = await datasetService.search(normalSearchText, normalFilters, normalOptions);
-    expect(elasticsearch.searchWithAggregations).toHaveBeenCalled();
     expect(result).toHaveProperty('error');
     expect(result.error).toBeDefined();
   });

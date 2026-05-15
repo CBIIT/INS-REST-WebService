@@ -2,96 +2,78 @@ import { describe, it, expect } from 'vitest';
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
-const queryGenerator = require('./queryGenerator.js');
-const { DATASET_SEARCH_FIELDS } = require('../Utils/datasetFields.js');
-import { normalSearchText, normalFilters, normalReturnFields, normalOptions } from './queryGenerator.test.fixtures.js';
-
-// Opensearch
+const queryGenerator = require('./resourceQueryGenerator.js');
 import {
+  normalSearchText,
+  normalFilters,
+  normalReturnFields,
+  normalOptions,
   normalOSQuery,
-  oSHighlightClause,
   makeExpectedScrollBody,
   normalCountQuery,
   filtersOnlyCountQuery,
   searchOnlyCountQuery,
-} from './queryGenerator.test.fixtures.js';
+} from './resourceQueryGenerator.test.fixtures.js';
 
 describe('getSearchQueryV2', () => {
-  it('should handle undefined parameters', () => { // 1
-    // Should be null, mainly because returnFields is undefined
+  it('should handle undefined parameters', () => {
     const result = queryGenerator.getSearchQueryV2(undefined, undefined, undefined, undefined);
     expect(result).toBeNull();
 
-    // Undefined searchText is ok
     const querySearchText = JSON.parse(JSON.stringify(normalOSQuery));
     delete querySearchText.query.bool.must;
     const resultSearchText = queryGenerator.getSearchQueryV2(undefined, normalFilters, normalOptions, normalReturnFields);
     expect(resultSearchText).toStrictEqual(querySearchText);
-
-    // TODO: Add tests showing that undefined filters and options are ok
   });
 
-  it('should handle null parameters', () => { // 2
-    // Should be null, mainly because returnFields is null
+  it('should handle null parameters', () => {
     const result = queryGenerator.getSearchQueryV2(null, null, null, null);
     expect(result).toBeNull();
-
-    // TODO: Add tests showing that null searchText, filters and options are ok
   });
 
-  it('should correctly handle empty parameters', () => { // 3
-    // Should be null, mainly because returnFields is empty
+  it('should correctly handle empty parameters', () => {
     const result = queryGenerator.getSearchQueryV2('', {}, {}, []);
     expect(result).toBeNull();
 
-    // Empty searchText is ok
     const querySearchText = JSON.parse(JSON.stringify(normalOSQuery));
     delete querySearchText.query.bool.must;
     const resultSearchText = queryGenerator.getSearchQueryV2('', normalFilters, normalOptions, normalReturnFields);
     expect(resultSearchText).toStrictEqual(querySearchText);
-
-    // TODO: Add tests showing that empty filters and options are ok
   });
 
-  it('should handle parameters being the wrong type', () => { // 4
-    // Search text being the wrong type
+  it('should handle parameters being the wrong type', () => {
     const resultSearchText = queryGenerator.getSearchQueryV2(12345, normalFilters, normalOptions, normalReturnFields);
     expect(resultSearchText).toBeNull();
 
-    // Filters not being an object
     const resultFilters = queryGenerator.getSearchQueryV2(normalSearchText, 'not an object', normalOptions, normalReturnFields);
     expect(resultFilters).toBeNull();
 
-    // Filters being an array
     const resultFiltersArray = queryGenerator.getSearchQueryV2(normalSearchText, ['a', 'b'], normalOptions, normalReturnFields);
     expect(resultFiltersArray).toBeNull();
 
-    // Options being the wrong type
     const resultOptions = queryGenerator.getSearchQueryV2(normalSearchText, normalFilters, 'not an object', normalReturnFields);
     expect(resultOptions).toBeNull();
 
-    // Options being an array
     const resultOptionsArray = queryGenerator.getSearchQueryV2(normalSearchText, normalFilters, [1, 2, 3], normalReturnFields);
     expect(resultOptionsArray).toBeNull();
 
-    // Return fields not being an array
     const resultReturnFields = queryGenerator.getSearchQueryV2(normalSearchText, normalFilters, normalOptions, 'not an array');
     expect(resultReturnFields).toBeNull();
   });
 
-  it('should handle whitespace-only searchText', () => { // 5
+  it('should handle whitespace-only searchText', () => {
     const querySearchText = JSON.parse(JSON.stringify(normalOSQuery));
     delete querySearchText.query.bool.must;
     const result = queryGenerator.getSearchQueryV2('   ', normalFilters, normalOptions, normalReturnFields);
     expect(result).toStrictEqual(querySearchText);
   });
 
-  it('should form a correct query when all parameters are provided', () => { // 6
+  it('should form a correct query when all parameters are provided', () => {
     const result = queryGenerator.getSearchQueryV2(normalSearchText, normalFilters, normalOptions, normalReturnFields);
     expect(result).toStrictEqual(normalOSQuery);
   });
 
-  it('should handle page being nonpositive', () => { // 7
+  it('should handle page being nonpositive', () => {
     const optionsWithZeroPage = {
       ...normalOptions,
       pageInfo: {
@@ -112,7 +94,7 @@ describe('getSearchQueryV2', () => {
     expect(resultWithNegativePage).toStrictEqual(normalOSQuery);
   });
 
-  it('should ignore page size being nonpositive', () => { // 8
+  it('should ignore page size being nonpositive', () => {
     const optionsWithZeroPageSize = {
       ...normalOptions,
       pageInfo: {
@@ -144,13 +126,13 @@ describe('getSearchQueryV2', () => {
     expect(resultNegative).toStrictEqual(normalOSQuery);
   });
 
-  it('should enable scroll for deep pagination past 10,000', () => { // 9
+  it('should enable scroll for deep pagination past 10,000', () => {
     const deepOptions = {
       ...normalOptions,
       pageInfo: {
         ...normalOptions.pageInfo,
-        page: '1001', // test numeric strings (as from query params)
-        pageSize: '10', // from = 10 * (1001 - 1) = 10000
+        page: '1001',
+        pageSize: '10',
       },
     };
 
@@ -171,13 +153,13 @@ describe('getSearchQueryV2', () => {
     expect(result.body).toStrictEqual(makeExpectedScrollBody(10));
   });
 
-  it('should not enable scroll when the request ends at 10,000', () => { // 10
+  it('should not enable scroll when the request ends at 10,000', () => {
     const optionsAtLimit = {
       ...normalOptions,
       pageInfo: {
         ...normalOptions.pageInfo,
         page: 1,
-        pageSize: 10000, // from=0, from+size = 10000 (no scroll)
+        pageSize: 10000,
       },
     };
 
@@ -193,13 +175,13 @@ describe('getSearchQueryV2', () => {
     expect(result.size).toBe(10000);
   });
 
-  it('should not enable scroll for shallow pages when page params are strings', () => { // 11
+  it('should not enable scroll for shallow pages when page params are strings', () => {
     const stringOptions = {
       ...normalOptions,
       pageInfo: {
         ...normalOptions.pageInfo,
-        page: '11', // from = 10 * (11 - 1) = 100
-        pageSize: '10', // from + size = 110 (no scroll)
+        page: '11',
+        pageSize: '10',
       },
     };
 
@@ -215,13 +197,13 @@ describe('getSearchQueryV2', () => {
     expect(result.size).toBe(10);
   });
 
-  it('should enable scroll when page size alone exceeds 10,000', () => { // 12
+  it('should enable scroll when page size alone exceeds 10,000', () => {
     const largePageSizeOptions = {
       ...normalOptions,
       pageInfo: {
         ...normalOptions.pageInfo,
         page: 1,
-        pageSize: 10001, // from=0, from+size = 10001 (scroll)
+        pageSize: 10001,
       },
     };
 
@@ -241,13 +223,13 @@ describe('getSearchQueryV2', () => {
     expect(result.body).toStrictEqual(makeExpectedScrollBody(10001));
   });
 
-  it('should enable scroll when the computed offset goes beyond 10,000', () => { // 13
+  it('should enable scroll when the computed offset goes beyond 10,000', () => {
     const deepOffsetOptions = {
       ...normalOptions,
       pageInfo: {
         ...normalOptions.pageInfo,
-        page: 1002, // from = 10 * (1002 - 1) = 10010
-        pageSize: 10, // from + size = 10020 (scroll)
+        page: 1002,
+        pageSize: 10,
       },
     };
 
@@ -267,7 +249,7 @@ describe('getSearchQueryV2', () => {
     expect(result.body).toStrictEqual(makeExpectedScrollBody(10));
   });
 
-  it('should not enable scroll when pageInfo is missing', () => { // 14
+  it('should not enable scroll when pageInfo is missing', () => {
     const optionsNoPageInfo = { ...normalOptions };
     delete optionsNoPageInfo.pageInfo;
 
@@ -282,7 +264,7 @@ describe('getSearchQueryV2', () => {
     expect(result).toStrictEqual(normalOSQuery);
   });
 
-  it('should not enable scroll when pageInfo values are non-numeric or non-finite', () => { // 15
+  it('should not enable scroll when pageInfo values are non-numeric or non-finite', () => {
     const badPageInfoStrings = {
       ...normalOptions,
       pageInfo: {
@@ -317,13 +299,13 @@ describe('getSearchQueryV2', () => {
     expect(resultInfinity).toStrictEqual(normalOSQuery);
   });
 
-  it('should enable scroll when page 2 with size 10,000 is requested', () => { // 16
+  it('should enable scroll when page 2 with size 10,000 is requested', () => {
     const pageTwoAtMaxSize = {
       ...normalOptions,
       pageInfo: {
         ...normalOptions.pageInfo,
-        page: 2, // from = 10000
-        pageSize: 10000, // from + size = 20000 (scroll)
+        page: 2,
+        pageSize: 10000,
       },
     };
 
@@ -343,41 +325,41 @@ describe('getSearchQueryV2', () => {
   });
 });
 
-describe('getDatasetCountQuery', () => {
-  it('should return a count query with both search and filters', () => { // 1
-    const result = queryGenerator.getDatasetCountQuery(normalSearchText, normalFilters);
+describe('getResourceCountQuery', () => {
+  it('should return a count query with both search and filters', () => {
+    const result = queryGenerator.getResourceCountQuery(normalSearchText, normalFilters);
     expect(result).toStrictEqual(normalCountQuery);
   });
 
-  it('should return an empty body when no search text and no filters are provided', () => { // 2
-    const resultUndefined = queryGenerator.getDatasetCountQuery(undefined, undefined);
+  it('should return an empty body when no search text and no filters are provided', () => {
+    const resultUndefined = queryGenerator.getResourceCountQuery(undefined, undefined);
     expect(resultUndefined).toStrictEqual({});
 
-    const resultEmpty = queryGenerator.getDatasetCountQuery('   ', {});
+    const resultEmpty = queryGenerator.getResourceCountQuery('   ', {});
     expect(resultEmpty).toStrictEqual({});
   });
 
-  it('should return a filter-only count query when searchText has no terms', () => { // 3
-    const result = queryGenerator.getDatasetCountQuery('   ', normalFilters);
+  it('should return a filter-only count query when searchText has no terms', () => {
+    const result = queryGenerator.getResourceCountQuery('   ', normalFilters);
     expect(result).toStrictEqual(filtersOnlyCountQuery);
   });
 
-  it('should return a search-only count query when filters are empty or have no values', () => { // 4
-    const resultEmptyObj = queryGenerator.getDatasetCountQuery(normalSearchText, {});
+  it('should return a search-only count query when filters are empty or have no values', () => {
+    const resultEmptyObj = queryGenerator.getResourceCountQuery(normalSearchText, {});
     expect(resultEmptyObj).toStrictEqual(searchOnlyCountQuery);
 
-    const resultEmptyValues = queryGenerator.getDatasetCountQuery(normalSearchText, {
-      primary_disease: [],
-      dataset_source_repo: [],
+    const resultEmptyValues = queryGenerator.getResourceCountQuery(normalSearchText, {
+      resource_tool_type: [],
+      resource_research_area: [],
     });
     expect(resultEmptyValues).toStrictEqual(searchOnlyCountQuery);
   });
 
-  it('should ignore invalid filter types and not throw', () => { // 5
-    const result = queryGenerator.getDatasetCountQuery(normalSearchText, 'not an object');
+  it('should ignore invalid filter types and not throw', () => {
+    const result = queryGenerator.getResourceCountQuery(normalSearchText, 'not an object');
     expect(result).toStrictEqual(searchOnlyCountQuery);
 
-    const resultArray = queryGenerator.getDatasetCountQuery(normalSearchText, ['a', 'b']);
+    const resultArray = queryGenerator.getResourceCountQuery(normalSearchText, ['a', 'b']);
     expect(resultArray).toStrictEqual(searchOnlyCountQuery);
   });
 });
