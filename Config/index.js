@@ -53,6 +53,7 @@ var config = {
 
   // index alias name for dataset
   indexDS: "datasets",
+  indexR: "resources",
 
   // index alias name for ccdc documents
   indexDoc: "documents",
