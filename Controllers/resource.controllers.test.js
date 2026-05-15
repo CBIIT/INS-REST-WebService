@@ -1,4 +1,5 @@
 import {
+  afterEach,
   describe,
   expect,
   it,
@@ -20,9 +21,30 @@ const resourceService = require('../Services/resource.service.js');
 const resourceControllers = require('./resource.controllers.js');
 const { RESOURCE_DEFAULT_SORT_FIELD } = require('../Utils/resourceFields.js');
 
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
 describe('getById', () => {
+  it('should return a failure response when the resource uuid is missing', async () => {
+    const searchByIdSpy = vi.spyOn(resourceService, 'searchById');
+    const json = vi.fn();
+    const status = vi.fn(() => ({ json }));
+    const req = { params: { uuid: '   ' } };
+    const res = { status, json: vi.fn() };
+
+    await resourceControllers.getById(req, res);
+
+    expect(searchByIdSpy).not.toHaveBeenCalled();
+    expect(status).toHaveBeenCalledWith(400);
+    expect(json).toHaveBeenCalledWith({
+      status: 'failure',
+      error: 'A resource UUID is required',
+    });
+  });
+
   it('should return a failure response when the resource is not found', async () => {
-    vi.spyOn(resourceService, 'searchById').mockResolvedValue(null);
+    const searchByIdSpy = vi.spyOn(resourceService, 'searchById').mockResolvedValue(null);
 
     const json = vi.fn();
     const status = vi.fn(() => ({ json }));
@@ -31,7 +53,7 @@ describe('getById', () => {
 
     await resourceControllers.getById(req, res);
 
-    expect(resourceService.searchById).toHaveBeenCalledWith('missing-resource-uuid');
+    expect(searchByIdSpy).toHaveBeenCalledWith('missing-resource-uuid');
     expect(status).toHaveBeenCalledWith(404);
     expect(json).toHaveBeenCalledWith({
       status: 'failure',
@@ -40,14 +62,14 @@ describe('getById', () => {
   });
 
   it('should return a success response when the resource is found', async () => {
-    vi.spyOn(resourceService, 'searchById').mockResolvedValue(foundResource);
+    const searchByIdSpy = vi.spyOn(resourceService, 'searchById').mockResolvedValue(foundResource);
 
     const req = { params: { uuid: 'resource-uuid-1' } };
     const res = { status: vi.fn(), json: vi.fn() };
 
     await resourceControllers.getById(req, res);
 
-    expect(resourceService.searchById).toHaveBeenCalledWith('resource-uuid-1');
+    expect(searchByIdSpy).toHaveBeenCalledWith('resource-uuid-1');
     expect(res.json).toHaveBeenCalledWith({
       status: 'success',
       data: foundResource,
