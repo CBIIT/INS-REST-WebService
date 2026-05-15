@@ -20,7 +20,13 @@ export default defineConfig([
       "import-x/no-extraneous-dependencies": [
         "error",
         {
-          devDependencies: ["**/*.{test}.{js,ts}", "**/setupTests.{js,ts}", "vite.config.js", "eslint.config.mjs"],
+          devDependencies: [
+            "**/*.test.{js,ts}",
+            "**/*.*.test.{js,ts}",
+            "**/setupTests.{js,ts}",
+            "vite.config.js",
+            "eslint.config.mjs",
+          ],
           optionalDependencies: false,
         },
       ],
