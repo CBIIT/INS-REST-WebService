@@ -1,41 +1,41 @@
 /**
- * Fixtures for the queryGenerator.test.js file
+ * Fixtures for the resourceQueryGenerator.test.js file
  */
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
-const { DATASET_SEARCH_FIELDS } = require('../Utils/datasetFields.js');
-const queryGenerator = require('./queryGenerator.js');
+const { RESOURCE_SEARCH_FIELDS } = require('../Utils/resourceFields.js');
+const queryGenerator = require('./resourceQueryGenerator.js');
 
 // Input parameters
 export const normalSearchText = 'multiple myeloma';
 export const normalFilters = {
-  primary_disease: [
-    "Melanoma",
-    "Multiple Cancer Types",
+  resource_tool_type: [
+    "Analysis Tools",
+    "Datasets and Databases"
   ],
-  dataset_source_repo: [
-    "CEDCD",
-    "dbGaP",
-  ],
+  resource_research_area: [
+      "Cancer Omics",
+      "Cancer Biology"
+  ]
 };
-export const normalReturnFields = ['dataset_title', 'description'];
+export const normalReturnFields = ['resource_title', 'resource_short_description'];
 export const normalOptions = {
   pageInfo: {
     page: 1,
     pageSize: 10,
   },
   sort: {
-    name: "Dataset",
-    k: "dataset_title_sort",
-    v: "asc",
+    name: 'Resource',
+    k: 'resource_title_sort',
+    v: 'asc',
   },
 };
 
 // Reference queries
 export const oSHighlightClause = queryGenerator.getHighlightClause();
 export const normalOSQuery = {
-  _source: ['dataset_title', 'description'],
+  _source: ['resource_title', 'resource_short_description'],
   size: 10,
   from: 0,
   query: {
@@ -43,32 +43,32 @@ export const normalOSQuery = {
       must: [
         {
           multi_match: {
-            query: "multiple",
-            fields: DATASET_SEARCH_FIELDS,
+            query: 'multiple',
+            fields: RESOURCE_SEARCH_FIELDS,
           },
         },
         {
           multi_match: {
-            query: "myeloma",
-            fields: DATASET_SEARCH_FIELDS,
+            query: 'myeloma',
+            fields: RESOURCE_SEARCH_FIELDS,
           },
         },
       ],
       filter: [
         {
           terms: {
-            primary_disease: [
-              "Melanoma",
-              "Multiple Cancer Types",
+            resource_tool_type: [
+              "Analysis Tools",
+              "Datasets and Databases"
             ],
           },
         },
         {
           terms: {
-            dataset_source_repo: [
-              "CEDCD",
-              "dbGaP",
-            ],
+            resource_research_area: [
+                "Cancer Omics",
+                "Cancer Biology"
+            ]
           },
         },
       ],
@@ -76,7 +76,7 @@ export const normalOSQuery = {
   },
   sort: [
     {
-      dataset_title_sort: "asc",
+      resource_title_sort: 'asc',
     },
   ],
   highlight: oSHighlightClause,

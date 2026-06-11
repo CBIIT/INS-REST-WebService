@@ -48,6 +48,7 @@ const search = async (searchText, filters, options) => {
     return result;
   }
 
+  // TODO - might need this later, hence the false &&
   if (false && searchableText !== "") {
     let aggregationKey = cacheKeyGenerator.getAggregationKey(searchableText);
     let aggregation = cache.getValue(aggregationKey);
@@ -175,6 +176,7 @@ const searchById = async (id) => {
 const getFilters = async (searchText, searchFilters) => {
   const filtersKey = await cacheKeyGenerator.datasetsFilterKey(searchText, searchFilters);
   let filters = cache.getValue(filtersKey);
+  let searchableText = null;
 
   // Return result if already cached
   if (filters) {

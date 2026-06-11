@@ -1,4 +1,8 @@
-const { DATASET_SEARCH_FIELDS, DATASET_HIGHLIGHT_FIELDS } = require('../Utils/datasetFields.js');
+const {
+  RESOURCE_HIGHLIGHT_FIELDS,
+  RESOURCE_IDENTIFIER_FIELD,
+  RESOURCE_SEARCH_FIELDS,
+} = require('../Utils/resourceFields.js');
 
 let queryGenerator = {};
 
@@ -34,11 +38,11 @@ queryGenerator.getSearchAggregationQuery = (searchText) => {
         dsl.multi_match.query = searchTerm;
         //dsl.multi_match.analyzer = "standard_analyzer";
         dsl.multi_match.fields = [
-          'dataset_title',
+          'resource_title',
           // "data_resource_name",
-          // "dataset_name",
+          // "resource_name",
           // "desc",
-          // "primary_dataset_scope",
+          // "primary_resource_scope",
           // "poc",
           // "poc_email",
           // "published_in",
@@ -149,7 +153,7 @@ queryGenerator.getFiltersClause = (filters) => {
 }
 
 queryGenerator.getHighlightClause = () => {
-  const fieldsMap = DATASET_HIGHLIGHT_FIELDS.reduce((acc, field) => {
+  const fieldsMap = RESOURCE_HIGHLIGHT_FIELDS.reduce((acc, field) => {
     acc[field] = { number_of_fragments: 0 };
     return acc;
   }, {});
@@ -209,12 +213,12 @@ queryGenerator.getTextSearchConditions = (searchText) => {
     return null;
   }
 
-  // Add a search condition for finding each term in any of the dataset fields
+  // Add a search condition for finding each term in any of the resource fields
   uniqueSearchTerms.forEach((term) => {
     const dsl = {
       'multi_match': {
         'query': term,
-        'fields': DATASET_SEARCH_FIELDS,
+        'fields': RESOURCE_SEARCH_FIELDS,
       }
     };
 
@@ -225,7 +229,7 @@ queryGenerator.getTextSearchConditions = (searchText) => {
 };
 
 /**
- * Constructs a search query for the datasets index
+ * Constructs a search query for the resources index
  * @param {String} searchText The text to search for
  * @param {Object} filters The filters to apply
  * @param {Object} options Sort and pagination options
@@ -334,13 +338,13 @@ queryGenerator.getSearchQueryV2 = (searchText, filters, options, returnFields) =
 };
 
 /**
- * Generates a bucket aggregation query on dataset properties
+ * Generates a bucket aggregation query on resource properties
  * @param {String} searchText The text to search for
  * @param {Object} searchFilters The filters to apply
  * @param {String} excludedField The field to exclude from the filters
  * @returns {Object} Opensearch query to retrieve filter counts
  */
-queryGenerator.getDatasetFiltersQuery = (searchText, searchFilters, excludedField) => {
+queryGenerator.getResourceFiltersQuery = (searchText, searchFilters, excludedField) => {
   // Borrow some of the search query
   const body = {};
   const compoundQuery = {
@@ -385,12 +389,12 @@ queryGenerator.getDatasetFiltersQuery = (searchText, searchFilters, excludedFiel
   return body;
 };
 /**
- * Generates a count query for Opensearch using the same filters as getSearchQueryV2 and getDatasetFiltersQuery.
+ * Generates a count query for Opensearch using the same filters as getSearchQueryV2 and getResourceFiltersQuery.
  * @param {String} searchText The text to search for
  * @param {Object} searchFilters The filters to apply
  * @returns {Object} Opensearch count query
  */
-queryGenerator.getDatasetCountQuery = (searchText, searchFilters) => {
+queryGenerator.getResourceCountQuery = (searchText, searchFilters) => {
   const body = {};
 
   // Build the main compound query using existing query logic
@@ -418,165 +422,16 @@ queryGenerator.getDatasetCountQuery = (searchText, searchFilters) => {
   return body;
 };
 
-queryGenerator.getParticipatingResourcesSearchQuery = (filters, options) => {
-  let query = {};
-  const filterKeys = Object.keys(filters);
-  if(filterKeys.length > 0){
-    query.bool = {};
-    query.bool.must = [];
-    for(let k = 0; k < filterKeys.length; k ++){
-      let attribute = "";
-      if (filterKeys[k] === "resource_type") {
-        attribute = "resource_type";
-      }
-      else if(filterKeys[k] === "data_content_type") {
-        attribute = "data_content_type";
-      }
-      else {
-        attribute = "";
-      }
-      
-      if(attribute !== ""){
-        let clause = {};
-        clause.bool = {};
-        clause.bool.should = [];
-        filters[filterKeys[k]].map((item) => {
-          let tmp = {};
-          tmp.match = {};
-          tmp.match[attribute] = item;
-          clause.bool.should.push(tmp);
-        });
-        query.bool.must.push(clause);
-      }
-    }
-    if(query.bool.must.length === 0){
-      query = {};
-      query.match_all = {};
-    }
-  }
-  else{
-    query.match_all = {};
-  }
-
-  let body = {
-    size: options.pageInfo.pageSize,
-    from: (options.pageInfo.page - 1 ) * options.pageInfo.pageSize
-  };
-  body.query = query;
-  body.sort = [];
-  let tmp = {};
-  tmp["resource_name"] = "asc";
-  // body.sort.push(tmp);
-  return body;
-};
-
-queryGenerator.getDocumentSearchQuery = (keyword, options) => {
-  let body = {
-    size: options.pageInfo.pageSize,
-    from: (options.pageInfo.page - 1 ) * options.pageInfo.pageSize
-  };
-  let query = {};
-  const strArr = keyword.trim().split(" ");
-  const result = [];
-  strArr.forEach((term) => {
-    const t = term.trim();
-    if (t.length > 2) {
-      result.push(t);
-    }
-  });
-  const keywords = result.length === 0 ? "" : result.join(" ");
-  if(keywords != ""){
-    const termArr = keywords.split(" ");
-    let compoundQuery = {};
-    compoundQuery.bool = {};
-    compoundQuery.bool.must = [];
-    termArr.forEach((term) => {
-      let searchTerm = term.trim();
-      if(searchTerm != ""){
-        let dsl = {};
-        dsl.multi_match = {};
-        dsl.multi_match.query = searchTerm;
-        //dsl.multi_match.analyzer = "standard_analyzer";
-        dsl.multi_match.fields = [
-          "title", "description", "content"
-        ];
-        // compoundQuery.bool.must.push(dsl);
-      }
-    });
-    body.query = compoundQuery;
-  }
-  else {
-    query.match_all = {};
-    body.query = query;
-  }
-
-  body.sort = [];
-  let tmp = {};
-  tmp["title.raw"] = "asc";
-  // body.sort.push(tmp);
-
-  body.highlight = {
-    pre_tags: ["<b>"],
-    post_tags: ["</b>"],
-    fields: {
-      "title": { number_of_fragments: 0 },
-      "description": { number_of_fragments: 0 },
-      "content": { number_of_fragments: 0 },
-      "link": { number_of_fragments: 0 }
+queryGenerator.getResourceByIdQuery = (id) => {
+  return {
+    size: 1,
+    from: 0,
+    query: {
+      term: {
+        [RESOURCE_IDENTIFIER_FIELD]: id,
+      },
     },
   };
-  return body;
-};
-
-queryGenerator.getDatasetByIdQuery = (id) => {
-  let dsl = {};
-  dsl.match = {};
-  dsl.match.dataset_id = id;
-
-  let body = {
-    size: 1,
-    from: 0
-  };
-  body.query = dsl;
-  // body.sort = [{
-  //   "dataset_id": "asc"
-  // }];
-  
-  return body;
-};
-
-queryGenerator.getDataresourceByIdQuery = (id) => {
-  let dsl = {};
-  dsl.match = {};
-  dsl.match.data_resource_id = id;
-
-  let body = {
-    size: 1,
-    from: 0
-  };
-  body.query = dsl;
-  // body.sort = [{
-  //   "data_resource_id": "asc"
-  // }];
-  
-  return body;
-};
-
-queryGenerator.getDatasetsByDataresourceIdQuery = (dataresourceId) => {
-  let dsl = {};
-  dsl.match = {};
-  dsl.match.data_resource_id = dataresourceId;
-
-  let body = {
-    size: 1000,
-    from: 0
-  };
-  body.query = dsl;
-  // body.sort = [{
-  //   "dataset_id": "asc"
-  // }];
-  
-  return body;
 };
 
 module.exports = queryGenerator;

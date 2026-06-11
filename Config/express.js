@@ -7,9 +7,11 @@ const createError = require("http-errors");
 const bodyParser = require('body-parser');
 const config = require("./index");
 
+const applicationRouter = require("../Routes/application.routes");
 const datasetRouter = require("../Routes/dataset.routes");
 const documentRouter = require("../Routes/document.routes");
-const applicationRouter = require("../Routes/application.routes");
+const resourceItemRouter = require("../Routes/resource-item.routes");
+const resourceRouter = require("../Routes/resource.routes");
 
 module.exports = function(app) {
   app.use(helmet());
@@ -28,10 +30,11 @@ module.exports = function(app) {
   });
 
   //Routers
+  app.use("/service/application", applicationRouter);
   app.use("/service/datasets", datasetRouter);
   app.use("/service/documents", documentRouter);
-  app.use("/service/application", applicationRouter);
-
+  app.use("/service/resource", resourceItemRouter);
+  app.use("/service/resources", resourceRouter);
 
   app.get("/service", (req, res) => {
     res.send("Hi, welcome to INS REST Service!");
