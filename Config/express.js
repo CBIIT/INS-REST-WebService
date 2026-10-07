@@ -4,7 +4,6 @@ const compression = require("compression");
 const path = require("path");
 const cookieParser = require("cookie-parser");
 const createError = require("http-errors");
-const bodyParser = require('body-parser');
 const config = require("./index");
 
 const applicationRouter = require("../Routes/application.routes");
