@@ -27,7 +27,6 @@
   "devDependencies": {
     "@vitest/coverage-v8": "^4.0.15",
     "nodemon": "^3.1.4",
-    "rollup": "^4.55.1",
     "vitest": "^4.0.15"
   },
   "overrides": {
