@@ -100,16 +100,7 @@ var config = {
     "sample_is_xenograft"
   ],
 
-  //mysql connection
-  mysql: {
-    connectionLimit: 100, 
-    host: process.env.RDB_HOST || "localhost",
-    user: process.env.RDB_USER || "root", 
-    password : process.env.RDB_PASSWORD || "123456", 
-    db : process.env.RDB_NAME || "ccdc"
-  },
-
-    elasticsearch: {
+  elasticsearch: {
     host: (process.env.ES_PROTOCOL || "https") + "://" + (process.env.ES_HOST || "127.0.0.1:9200"),
     requestTimeout: 30000
   },
