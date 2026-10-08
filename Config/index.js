@@ -48,9 +48,6 @@ var config = {
   // Used by winston logger
   logLevel: process.env.LOG_LEVEL || "silly",
 
-  // index alias name for data resource
-  indexDR: "dataresources",
-
   // index alias name for dataset
   indexDS: "datasets",
   indexR: "resources",
@@ -60,9 +57,6 @@ var config = {
 
   //in memory cache ttl
   itemTTL: 24 * 60 * 60,
-
-  //display how many data resources on the landing page
-  drDisplayAmount: 10,
 
   //limit the return count of each of the filters
   limitFilterCount : 30,

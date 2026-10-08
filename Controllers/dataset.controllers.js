@@ -34,9 +34,6 @@ const search = async (req, res) => {
   // } else if (sort.k === "sample_id") {
   //   sort.name = "Samples";
   //   sort.k = "sample_id";
-  // } else {
-  //   sort.name = "Resource";
-  //   sort.k = "data_resource_id";
   // }
   if (!(sort?.v && ['asc', 'desc'].includes(sort.v))) {
     sort.v = 'asc';
@@ -106,9 +103,6 @@ const export2CSV = async (req, res) => {
   // } else if (sort.k === "sample_id") {
   //   sort.name = "Samples";
   //   sort.k = "sample_id";
-  // } else {
-  //   sort.name = "Resource";
-  //   sort.k = "data_resource_id";
   // }
   if (!(sort.v && ['asc', 'desc'].includes(sort.v))) {
     sort.v = 'asc';

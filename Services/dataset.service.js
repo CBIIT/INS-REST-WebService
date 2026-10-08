@@ -227,19 +227,9 @@ const getFilters = async (searchText, searchFilters) => {
   return filters;
 };
 
-const searchDatasetsByDataresourceId = async (dataresourceId) => {
-  let query = queryGenerator.getDatasetsByDataresourceIdQuery(dataresourceId);
-  let searchResults = await elasticsearch.search(config.indexDS, query);
-  let datasets = searchResults.hits.map((ds) => {
-    return ds._source;
-  });
-  return datasets;
-}
-
 module.exports = {
   search,
   export2CSV,
   searchById,
   getFilters,
-  searchDatasetsByDataresourceId,
 };

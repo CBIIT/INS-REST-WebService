@@ -35,7 +35,6 @@ queryGenerator.getSearchAggregationQuery = (searchText) => {
         //dsl.multi_match.analyzer = "standard_analyzer";
         dsl.multi_match.fields = [
           'dataset_title',
-          // "data_resource_name",
           // "dataset_name",
           // "desc",
           // "primary_dataset_scope",
@@ -418,58 +417,6 @@ queryGenerator.getDatasetCountQuery = (searchText, searchFilters) => {
   return body;
 };
 
-queryGenerator.getParticipatingResourcesSearchQuery = (filters, options) => {
-  let query = {};
-  const filterKeys = Object.keys(filters);
-  if(filterKeys.length > 0){
-    query.bool = {};
-    query.bool.must = [];
-    for(let k = 0; k < filterKeys.length; k ++){
-      let attribute = "";
-      if (filterKeys[k] === "resource_type") {
-        attribute = "resource_type";
-      }
-      else if(filterKeys[k] === "data_content_type") {
-        attribute = "data_content_type";
-      }
-      else {
-        attribute = "";
-      }
-      
-      if(attribute !== ""){
-        let clause = {};
-        clause.bool = {};
-        clause.bool.should = [];
-        filters[filterKeys[k]].map((item) => {
-          let tmp = {};
-          tmp.match = {};
-          tmp.match[attribute] = item;
-          clause.bool.should.push(tmp);
-        });
-        query.bool.must.push(clause);
-      }
-    }
-    if(query.bool.must.length === 0){
-      query = {};
-      query.match_all = {};
-    }
-  }
-  else{
-    query.match_all = {};
-  }
-
-  let body = {
-    size: options.pageInfo.pageSize,
-    from: (options.pageInfo.page - 1 ) * options.pageInfo.pageSize
-  };
-  body.query = query;
-  body.sort = [];
-  let tmp = {};
-  tmp["resource_name"] = "asc";
-  // body.sort.push(tmp);
-  return body;
-};
-
 queryGenerator.getDocumentSearchQuery = (keyword, options) => {
   let body = {
     size: options.pageInfo.pageSize,
@@ -535,40 +482,6 @@ queryGenerator.getDatasetByIdQuery = (id) => {
 
   let body = {
     size: 1,
-    from: 0
-  };
-  body.query = dsl;
-  // body.sort = [{
-  //   "dataset_id": "asc"
-  // }];
-  
-  return body;
-};
-
-queryGenerator.getDataresourceByIdQuery = (id) => {
-  let dsl = {};
-  dsl.match = {};
-  dsl.match.data_resource_id = id;
-
-  let body = {
-    size: 1,
-    from: 0
-  };
-  body.query = dsl;
-  // body.sort = [{
-  //   "data_resource_id": "asc"
-  // }];
-  
-  return body;
-};
-
-queryGenerator.getDatasetsByDataresourceIdQuery = (dataresourceId) => {
-  let dsl = {};
-  dsl.match = {};
-  dsl.match.data_resource_id = dataresourceId;
-
-  let body = {
-    size: 1000,
     from: 0
   };
   body.query = dsl;
