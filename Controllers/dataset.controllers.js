@@ -150,9 +150,12 @@ const getFilters = async (req, res) => {
   res.json({status: 'success', data: filters});
 };
 
-const getAdvancedFilters = async (req, res) => {
-  let advancedFilters = await datasetService.getAdvancedFilters();
-  res.json({status: 'success', data: advancedFilters});
+const getAdvancedFilters = (req, res) => {
+  // TODO: Implement advanced filters without the retired MySQL service.
+  return res.status(501).json({
+    status: "error",
+    message: "This endpoint is not implemented",
+  });
 };
 
 const getDatasetCount = async (req, res) => {

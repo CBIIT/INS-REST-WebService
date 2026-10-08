@@ -241,6 +241,5 @@ module.exports = {
   export2CSV,
   searchById,
   getFilters,
-  getAdvancedFilters,
   searchDatasetsByDataresourceId,
 };
