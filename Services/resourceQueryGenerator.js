@@ -39,7 +39,6 @@ queryGenerator.getSearchAggregationQuery = (searchText) => {
         //dsl.multi_match.analyzer = "standard_analyzer";
         dsl.multi_match.fields = [
           'resource_title',
-          // "data_resource_name",
           // "resource_name",
           // "desc",
           // "primary_resource_scope",

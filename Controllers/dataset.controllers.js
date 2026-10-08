@@ -34,9 +34,6 @@ const search = async (req, res) => {
   // } else if (sort.k === "sample_id") {
   //   sort.name = "Samples";
   //   sort.k = "sample_id";
-  // } else {
-  //   sort.name = "Resource";
-  //   sort.k = "data_resource_id";
   // }
   if (!(sort?.v && ['asc', 'desc'].includes(sort.v))) {
     sort.v = 'asc';
@@ -106,9 +103,6 @@ const export2CSV = async (req, res) => {
   // } else if (sort.k === "sample_id") {
   //   sort.name = "Samples";
   //   sort.k = "sample_id";
-  // } else {
-  //   sort.name = "Resource";
-  //   sort.k = "data_resource_id";
   // }
   if (!(sort.v && ['asc', 'desc'].includes(sort.v))) {
     sort.v = 'asc';
@@ -150,9 +144,12 @@ const getFilters = async (req, res) => {
   res.json({status: 'success', data: filters});
 };
 
-const getAdvancedFilters = async (req, res) => {
-  let advancedFilters = await datasetService.getAdvancedFilters();
-  res.json({status: 'success', data: advancedFilters});
+const getAdvancedFilters = (req, res) => {
+  // TODO: Implement advanced filters without the retired MySQL service.
+  return res.status(501).json({
+    status: "error",
+    message: "This endpoint is not implemented",
+  });
 };
 
 const getDatasetCount = async (req, res) => {
