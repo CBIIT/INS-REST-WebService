@@ -44,7 +44,7 @@ But this configuration does work:
 
 ## Start the backend
 
-Ensure that Elasticsearh and MySQL are running, and then run the command
+Ensure that OpenSearch is running, and then run the command
 
 ```bash
 npm run start

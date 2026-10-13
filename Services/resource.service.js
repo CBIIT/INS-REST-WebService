@@ -2,7 +2,6 @@ const config = require('../Config/index.js');
 const elasticsearch = require('../Components/elasticsearch.js');
 const cache = require('../Components/cache.js');
 const logger = require('../Components/logger.js');
-const mysql = require('../Components/mysql.js');
 const queryGenerator = require('./resourceQueryGenerator.js');
 const cacheKeyGenerator = require('./cacheKeyGenerator.js');
 const utils = require('../Utils/index.js');
