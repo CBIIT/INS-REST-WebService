@@ -97,11 +97,11 @@ const datasetFields = {
   'Description': 'description',
   'Experimental Approaches': 'experimental_approaches',
   'Dataset Source ID': 'dataset_source_id',
-  'Dataset Source Repository': 'dataset_source_repo',
+  'Data Resource': 'dataset_source_repo',
   'Dataset Source URL': 'dataset_source_url',
   'Dataset Storage and Distribution Platform': 'dataset_storage_distribution',
   'Institute': 'institute',
-  'Principal Investigator(s)': 'PI_name',
+  'Principal Investigators': 'PI_name',
   // Specifically exclude GPA, because we don't display it anywhere
   // 'Grant Program Administrator': 'GPA',
   'Division/Office/Center': 'dataset_doc',

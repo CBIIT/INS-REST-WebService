@@ -1,55 +1,25 @@
-const config = require("../Config");
-const cache = require("../Components/cache");
-const cacheKeyGenerator = require("./cacheKeyGenerator");
-const mysql = require("../Components/mysql");
-
 const getSiteDataUpdate = async () => {
-  let siteUpdateDateKey = cacheKeyGenerator.siteUpdateDateKey();
-  let date = cache.getValue(siteUpdateDateKey);
-  if (!date) {
-    let sql = "select data_element, element_value, dataset_count from aggragation where data_element=?";
-
-    let inserts = [
-      "Site Data Update"
-    ];
-    sql = mysql.format(sql, inserts);
-    const result = await mysql.query(sql);
-    //group by data
-    if (result.length > 0) {
-      date = result[0].element_value;
-      cache.setValue(siteUpdateDateKey, date, config.itemTTL);
-    }
-  }
-
-  return date;
+  // TODO: Return the site's latest data update date from the cache when available.
+  // Otherwise, retrieve the "Site Data Update" value from the data source,
+  // cache it using the site update date key and config.itemTTL, and return it.
+  throw new Error("getSiteDataUpdate is not implemented");
 };
 
 const getWidgetUpdate = async () => {
-  let widgetUpdateKey = cacheKeyGenerator.widgetUpdateKey();
-  let result = cache.getValue(widgetUpdateKey);
-  if (!result) {
-    let sql = "select id, log_type, title, post_date, content_type, description from changelog order by post_date desc limit 3";
-
-    let inserts = [];
-    sql = mysql.format(sql, inserts);
-    result = await mysql.query(sql);
-    if (result.length > 0) {
-      cache.setValue(widgetUpdateKey, result, config.itemTTL);
-    }
-  }
-  return result;
+  // TODO: Return cached widget updates when available. Otherwise, retrieve the
+  // three most recent changelog entries, ordered by post date descending, with
+  // their ID, log type, title, post date, content type, and description.
+  // Cache nonempty results using the widget update key and config.itemTTL,
+  // then return the entries.
+  throw new Error("getWidgetUpdate is not implemented");
 };
 
 const getSiteUpdate = async (pageInfo) => {
-  let sql = "select id, post_date, content_type, title, description as highlight, details as description from changelog where log_type = 1 order by post_date desc limit ?, ?";
-
-  let inserts = [
-    ( pageInfo.page - 1 ) * pageInfo.pageSize,
-    pageInfo.pageSize
-  ];
-  sql = mysql.format(sql, inserts);
-  const result = await mysql.query(sql);
-  return result;
+  // TODO: Retrieve site changelog entries with log_type = 1, ordered by post
+  // date descending. Paginate using the one-based pageInfo.page and pageInfo.pageSize.
+  // Return each entry's ID, post date, content type, and title, mapping its
+  // description to highlight and its details to description.
+  throw new Error("getSiteUpdate is not implemented");
 };
 
 /**
@@ -58,27 +28,10 @@ const getSiteUpdate = async (pageInfo) => {
  * @returns {object} Map of glossary term names to glossary terms
  */
 const getGlossaryTerms = async (termNames) => {
-  let inserts = [];
-  let results = [];
-  let sql = '';
-  let terms = {};
-
-  // Special case for returning all terms if no names specified
-  if (termNames.length === 0) {
-    sql = 'SELECT * FROM glossary ORDER BY term_name';
-  } else {
-    inserts = [...inserts, [termNames]];
-    sql = 'SELECT * FROM glossary WHERE term_name IN ? ORDER BY term_name';
-  }
-
-  sql = mysql.format(sql, inserts);
-  results = await mysql.query(sql);
-
-  results.forEach((term) => {
-    terms[term.term_name] = term.definition;
-  });
-
-  return terms;
+  // TODO: Retrieve glossary terms matching termNames, or all terms when the
+  // array is empty, ordered by term name. Return an object mapping each term
+  // name to its definition, or an empty object when no terms match.
+  throw new Error("getGlossaryTerms is not implemented");
 };
 
 /**
@@ -87,25 +40,11 @@ const getGlossaryTerms = async (termNames) => {
  * @returns {object[]} Array of glossary terms
  */
 const getGlossaryTermsByFirstLetter = async (firstLetter) => {
-  let terms = {};
-  let sql = '';
-
-  if (!firstLetter || firstLetter.length > 1) {
-    throw new Error('Argument should be exactly one character long.');
-  }
-
-  sql = `
-    SELECT
-      term_name AS \`name\`,
-      term_category AS category,
-      \`definition\`,
-      \`reference\`
-    FROM glossary
-    WHERE term_name LIKE '${firstLetter}%'
-    ORDER BY term_name;`;
-  termList = await mysql.query(sql);
-  terms[firstLetter] = termList;
-  return terms;
+  // TODO: Validate that firstLetter is exactly one character, then retrieve
+  // glossary terms beginning with it, ordered by term name. Include each term's
+  // name, category, definition, and reference. Return an object keyed by
+  // firstLetter containing the matching terms, or an empty array for no matches.
+  throw new Error("getGlossaryTermsByFirstLetter is not implemented");
 };
 
 /**
@@ -113,41 +52,11 @@ const getGlossaryTermsByFirstLetter = async (firstLetter) => {
  * @returns {string[]} List of letters
  */
 const getFirstLettersInGlossary = async () => {
-  let glossaryLettersKey = cacheKeyGenerator.glossaryLettersKey();
-  let letters = cache.getValue(glossaryLettersKey);
-  const alphabet = [
-    'A', 'B', 'C', 'D', 'E',
-    'F', 'G', 'H', 'I', 'J',
-    'K', 'L', 'M', 'N', 'O',
-    'P', 'Q', 'R', 'S', 'T',
-    'U', 'V', 'W', 'X', 'Y',
-    'Z',
-  ];
-  const sql = `
-    SELECT UPPER(LEFT(term_name, 1)) AS letter
-    FROM ccdc.glossary
-    GROUP BY letter;
-  `;
-
-  if (!letters) {
-    let results = await mysql.query(sql);
-    results = results.map((result) => result.letter);
-    letters = {};
-
-    alphabet.forEach((letter) => {
-      if (results.includes(letter)) {
-        letters[letter] = true;
-      } else {
-        letters[letter] = false;
-      }
-    });
-
-    if (letters.length > 0) {
-      cache.setValue(glossaryLettersKey, letters, config.itemTTL);
-    }
-  }
-
-  return letters;
+  // TODO: Return the cached glossary letter map when available. Otherwise,
+  // retrieve the distinct uppercase first letters of glossary term names and
+  // build an object mapping every letter A–Z to whether matching terms exist.
+  // Cache the map using the glossary letters key and config.itemTTL, then return it.
+  throw new Error("getFirstLettersInGlossary is not implemented");
 };
 
 module.exports = {

@@ -48,9 +48,6 @@ var config = {
   // Used by winston logger
   logLevel: process.env.LOG_LEVEL || "silly",
 
-  // index alias name for data resource
-  indexDR: "dataresources",
-
   // index alias name for dataset
   indexDS: "datasets",
   indexR: "resources",
@@ -60,9 +57,6 @@ var config = {
 
   //in memory cache ttl
   itemTTL: 24 * 60 * 60,
-
-  //display how many data resources on the landing page
-  drDisplayAmount: 10,
 
   //limit the return count of each of the filters
   limitFilterCount : 30,
@@ -100,16 +94,7 @@ var config = {
     "sample_is_xenograft"
   ],
 
-  //mysql connection
-  mysql: {
-    connectionLimit: 100, 
-    host: process.env.RDB_HOST || "localhost",
-    user: process.env.RDB_USER || "root", 
-    password : process.env.RDB_PASSWORD || "123456", 
-    db : process.env.RDB_NAME || "ccdc"
-  },
-
-    elasticsearch: {
+  elasticsearch: {
     host: (process.env.ES_PROTOCOL || "https") + "://" + (process.env.ES_HOST || "127.0.0.1:9200"),
     requestTimeout: 30000
   },
